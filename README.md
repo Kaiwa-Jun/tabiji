@@ -1,4 +1,4 @@
-# tabiji
+# Tabiji
 
 ## サービス概要
 
