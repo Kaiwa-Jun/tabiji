@@ -291,3 +291,51 @@ LINE 上で簡単にスポット選定や日程調整ができ、効率よく旅
 - **広告／アフィリエイトの最適化**
   - 利用データを元にクリック率が高い位置へ配置を改善
   - 提携先の拡充（体験チケット、レストラン予約など）
+
+## 技術選定
+
+### フロントエンド
+
+- **React / Next.js**
+  - App Router ベースで構築
+  - LIFF アプリの UI を実装
+- **UI ライブラリ**
+  - Tailwind CSS：ユーティリティファーストでスタイリング
+  - shadcn/ui：基本的な UI コンポーネント（ボタン、カード、モーダル等）
+  - framer-motion：アニメーションやトランジション
+
+### バックエンド
+
+- **Next.js API Routes**
+  - Bot の Webhook 処理
+  - LIFF アプリからの API 呼び出し
+  - SSR や Server Actions も活用可能
+- **Supabase**
+  - データベース（PostgreSQL）
+  - 認証（必要に応じて）
+  - ストレージ（画像など）
+  - Edge Functions（必要になれば Bot 補助用に利用可能）
+
+### ホスティング
+
+- **Vercel**
+  - フロントエンド（Next.js）とバックエンド（API Routes）を一元管理
+  - Bot の Webhook エンドポイントもデプロイ
+- **Supabase**
+  - データベースおよび補助的なサーバー処理
+
+### 外部 API
+
+- **Google Maps API**
+  - スポット検索（Places API）
+  - 地図表示（Maps JavaScript API）
+  - 経路情報（Directions API, MVP では徒歩モードのみ）
+
+### 方針
+
+- **MVP 段階**
+  - Vercel（Next.js）＋ Supabase のハイブリッド構成でシンプルに始める
+  - Bot と LIFF アプリを同じコードベースで管理し、開発体験を重視
+- **将来的な拡張**
+  - 複雑な Bot 処理やスケジューリングが必要になれば Supabase Edge Functions を活用
+  - データベース連携やユーザー認証は段階的に導入
