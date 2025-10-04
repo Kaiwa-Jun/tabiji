@@ -4,11 +4,11 @@
 
 ### 1. Claude Code OAuth Tokenの取得と設定
 
-1. **Claude Codeでトークンを生成**:
+1. **Claude CodeでOAuthトークンを生成**:
    ```bash
    claude auth github
    ```
-   コマンドを実行してGitHubアカウントと連携し、OAuthトークンを生成
+   このコマンドを実行してGitHubアカウントと連携し、OAuthトークンを生成
 
 2. **GitHubリポジトリのSecretsに登録**:
    - GitHubリポジトリの「Settings」→「Secrets and variables」→「Actions」へ移動
