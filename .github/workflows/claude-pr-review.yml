@@ -32,6 +32,7 @@ jobs:
       - name: Run Claude Code Review
         uses: anthropics/claude-code-action@v1
         with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}  # 明示的にGitHubトークンを指定
           track_progress: true  # 進捗状況のトラッキングを有効化
           prompt: |
             リポジトリ: ${{ github.repository }}
@@ -135,6 +136,7 @@ jobs:
       - name: Respond to Claude mention
         uses: anthropics/claude-code-action@v1
         with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}  # 明示的にGitHubトークンを指定
           track_progress: true  # 進捗状況のトラッキングを有効化
           prompt: |
             リポジトリ: ${{ github.repository }}
@@ -187,7 +189,7 @@ jobs:
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
-            const context = github.context;
+            // contextはgithub-scriptが自動的に提供するため、宣言不要
             const issue_number = context.payload.pull_request?.number || context.payload.issue?.number;
 
             if (issue_number) {
