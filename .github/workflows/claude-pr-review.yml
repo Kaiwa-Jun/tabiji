@@ -115,7 +115,7 @@ jobs:
 
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           allowed_tools: "Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Read,View,GlobTool,GrepTool"
-          model: "claude-4-0-sonnet-20250805"
+          model: "claude-3-5-sonnet-20241022"
 
   # @claudeメンションへの応答
   mention-response:
@@ -170,7 +170,7 @@ jobs:
 
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           allowed_tools: "Bash(gh issue comment:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Read,View,GlobTool,GrepTool"
-          model: "claude-4-0-sonnet-20250805"
+          model: "claude-3-5-sonnet-20241022"
 
   # レビュー失敗時の通知（オプション）
   notify-failure:
