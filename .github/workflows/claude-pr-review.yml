@@ -31,6 +31,8 @@ jobs:
 
       - name: Run Claude Code Review
         uses: anthropics/claude-code-base-action@beta
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           prompt: |
             リポジトリ: ${{ github.repository }}
@@ -42,7 +44,7 @@ jobs:
 
             ## 重要な指示
             このPRを詳細にレビューし、レビュー結果をGitHubのPRコメントとして投稿してください。
-            必ず`gh pr comment`コマンドを使用してトップレベルのフィードバックをPRに投稿してください。
+            必ず`gh pr comment ${{ github.event.pull_request.number }} --body \"レビュー内容\"`の形式でコマンドを使用してトップレベルのフィードバックをPRに投稿してください。
             特定のコード行に関する指摘がある場合は、`mcp__github_inline_comment__create_inline_comment`を使用してインラインコメントを追加してください。
 
             注意: GitHubコメントのみを投稿し、レビューテキストをメッセージとして送信しないでください。
@@ -132,6 +134,8 @@ jobs:
 
       - name: Respond to Claude mention
         uses: anthropics/claude-code-base-action@beta
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           prompt: |
             リポジトリ: ${{ github.repository }}
@@ -144,7 +148,7 @@ jobs:
             タイトル: ${{ github.event.issue.title }}
 
             ## 重要な指示
-            ユーザーのコメントに対して適切に応答し、その応答を`gh issue comment`または`gh pr comment`を使用してGitHubに投稿してください。
+            ユーザーのコメントに対して適切に応答し、その応答を`gh issue comment ${{ github.event.issue.number }} --body \"コメント内容\"`または`gh pr comment ${{ github.event.issue.number }} --body \"コメント内容\"`を使用してGitHubに投稿してください。
             GitHubコメントのみを投稿し、レビューテキストをメッセージとして送信しないでください。
 
             ## 応答方針
