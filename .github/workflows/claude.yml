@@ -35,3 +35,7 @@ jobs:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           trigger_phrase: "@claude"
+          prompt: |
+            ${{ github.event_name == 'pull_request' && 'このPRの変更内容をレビューしてください。コードの品質、潜在的なバグ、改善提案について日本語でコメントしてください。' || '' }}
+          claude_args: |
+            --max-turns 5
