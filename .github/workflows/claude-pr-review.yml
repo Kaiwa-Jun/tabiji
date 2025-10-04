@@ -1,0 +1,36 @@
+name: Claude PR Auto Review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Claude Code Review
+        uses: anthropics/claude-code-action@beta
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+          direct_prompt: |
+            このPRの変更内容をレビューしてください。
+            以下の観点で確認をお願いします：
+
+            1. コードの品質と可読性
+            2. 潜在的なバグやセキュリティの問題
+            3. パフォーマンスの改善点
+            4. ベストプラクティスへの準拠
+
+            改善提案がある場合は、具体的なコード例とともに日本語でコメントしてください。
+            優先度（高/中/低）も併せて提示してください。
