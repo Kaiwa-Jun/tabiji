@@ -19,17 +19,19 @@ export function TestClientComponent() {
         const supabase = createClient()
 
         // Supabase接続テスト: usersテーブルのレコード数を取得
-        const { count, error } = await supabase
+        const result = await supabase
           .from('users')
           .select('*', { count: 'exact', head: true })
 
-        if (error) {
-          setError(error.message)
+        if (result.error) {
+          setError(result.error.message)
         } else {
-          setCount(count)
+          setCount(result.count)
         }
       } catch (err) {
-        setError(err instanceof Error ? err.message : '不明なエラー')
+        setError(
+          err instanceof Error ? err.message : '不明なエラーが発生しました'
+        )
       } finally {
         setLoading(false)
       }

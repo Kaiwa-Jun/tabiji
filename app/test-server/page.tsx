@@ -7,12 +7,24 @@ import { createClient } from '@/lib/supabase/server'
  * データベースからユーザー数を取得して表示します。
  */
 export default async function TestServerPage() {
-  const supabase = await createClient()
+  let count: number | null = null
+  let error: Error | null = null
 
-  // Supabase接続テスト: usersテーブルのレコード数を取得
-  const { count, error } = await supabase
-    .from('users')
-    .select('*', { count: 'exact', head: true })
+  try {
+    const supabase = await createClient()
+
+    // Supabase接続テスト: usersテーブルのレコード数を取得
+    const result = await supabase
+      .from('users')
+      .select('*', { count: 'exact', head: true })
+
+    count = result.count
+    if (result.error) {
+      error = new Error(result.error.message)
+    }
+  } catch (err) {
+    error = err instanceof Error ? err : new Error('不明なエラーが発生しました')
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
