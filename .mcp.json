@@ -3,6 +3,15 @@
     "chrome-devtools": {
       "command": "npx",
       "args": ["chrome-devtools-mcp@latest"]
+    },
+    "supabase": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "@supabase/mcp-server-supabase@latest",
+        "--access-token",
+        "sbp_d23a3d983ceeda3fd211e142a8a701542d2aec2e"
+      ]
     }
   }
 }
