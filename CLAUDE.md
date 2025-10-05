@@ -10,6 +10,8 @@
 
 - **フレームワーク**: Next.js 15+ (App Router)
 - **UIライブラリ**: React 19+
+- **データベース**: Supabase (PostgreSQL)
+- **認証**: Supabase Auth
 - **スタイリング**: Tailwind CSS 4+
 - **UIコンポーネント**: Radix UI (shadcn/ui) + lucide-react
 - **フォーム**: React Hook Form + Zod
@@ -145,6 +147,277 @@ export function UserForm() {
   );
 }
 ```
+
+## Supabase（データベース操作）
+
+### 基本方針
+
+tabijiでは、Supabaseをデータベース・認証基盤として使用します。Next.js 15のServer/Client Componentに応じて、適切なSupabaseクライアントを使い分けます。
+
+**重要な原則:**
+
+- セキュリティはRLS（Row Level Security）ポリシーで担保
+- Client ComponentでもDBに直接アクセス可能（RLSで保護）
+- 複雑な処理はServer Actionに集約
+
+### Supabaseクライアントの使い分け
+
+| 用途                               | 使用するクライアント                        | ファイル                 |
+| ---------------------------------- | ------------------------------------------- | ------------------------ |
+| Server Component（初期データ取得） | `createClient` from `@/lib/supabase/server` | `lib/supabase/server.ts` |
+| Client Component（ユーザー操作）   | `createClient` from `@/lib/supabase/client` | `lib/supabase/client.ts` |
+| Server Action（複雑な処理）        | `createClient` from `@/lib/supabase/server` | `lib/supabase/server.ts` |
+
+### パターン1: 単純なCRUD → Client Component
+
+**使用場面:**
+
+- ボタンクリックによる削除
+- フォーム送信による作成・更新
+- 単純な検索・フィルタリング
+
+**実装例:**
+
+```typescript
+// components/plan/delete-button.tsx
+'use client'
+import { createClient } from '@/lib/supabase/client'
+import { useRouter } from 'next/navigation'
+
+export function DeleteButton({ planId }: { planId: string }) {
+  const supabase = createClient()
+  const router = useRouter()
+
+  const handleDelete = async () => {
+    if (!confirm('本当に削除しますか?')) return
+
+    // Client Componentから直接DB操作（RLSで保護）
+    await supabase
+      .from('travel_plans')
+      .delete()
+      .eq('id', planId)
+
+    router.refresh() // Server Componentのデータを再取得
+  }
+
+  return <button onClick={handleDelete}>削除</button>
+}
+```
+
+### パターン2: 初期表示のデータ → Server Component
+
+**使用場面:**
+
+- ページを開いた時の一覧表示
+- 詳細画面の初期データ
+- SEOが重要なコンテンツ
+
+**実装例:**
+
+```typescript
+// app/liff/plans/page.tsx
+import { createClient } from '@/lib/supabase/server'
+
+export default async function PlansPage() {
+  const supabase = await createClient()
+
+  // Server Componentでデータ取得（初期表示）
+  const { data: plans } = await supabase
+    .from('travel_plans')
+    .select('*')
+    .order('created_at', { ascending: false })
+
+  return (
+    <div>
+      <h1>プラン一覧</h1>
+      {plans?.map(plan => (
+        <PlanCard key={plan.id} plan={plan} />
+      ))}
+    </div>
+  )
+}
+```
+
+### パターン3: 複雑な処理 → Client Component + Server Action
+
+**使用場面:**
+
+- 複数テーブルの更新
+- 外部API連携（LINE通知など）
+- 複雑なビジネスロジック
+- トランザクション処理
+
+**実装例:**
+
+```typescript
+// actions/plans.ts
+'use server'
+import { createClient } from '@/lib/supabase/server'
+import { revalidatePath } from 'next/cache'
+import { sendLineNotification } from '@/lib/line'
+
+export async function createPlanWithMembers(formData: FormData) {
+  const supabase = await createClient()
+
+  // 1. 認証チェック
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) throw new Error('ログインが必要です')
+
+  // 2. プラン作成
+  const { data: plan, error } = await supabase
+    .from('travel_plans')
+    .insert({
+      title: formData.get('title'),
+      user_id: user.id,
+    })
+    .select()
+    .single()
+
+  if (error) throw error
+
+  // 3. メンバー追加
+  const memberEmails = formData.getAll('members')
+  if (memberEmails.length > 0) {
+    await supabase.from('plan_members').insert(
+      memberEmails.map((email) => ({
+        plan_id: plan.id,
+        email: email as string,
+      }))
+    )
+
+    // 4. LINE通知送信
+    await sendLineNotification({
+      message: `${plan.title}に招待されました`,
+    })
+  }
+
+  // 5. キャッシュ再検証
+  revalidatePath('/liff/plans')
+
+  return { success: true, planId: plan.id }
+}
+```
+
+```typescript
+// components/plan/create-plan-form.tsx
+'use client'
+import { createPlanWithMembers } from '@/actions/plans'
+import { useRouter } from 'next/navigation'
+
+export function CreatePlanForm() {
+  const router = useRouter()
+
+  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    const formData = new FormData(e.currentTarget)
+
+    // Server Actionを呼び出し
+    const result = await createPlanWithMembers(formData)
+
+    if (result.success) {
+      router.push(`/liff/plan/${result.planId}`)
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit}>
+      <input name="title" placeholder="プラン名" required />
+      <input name="members" type="email" placeholder="メンバーのメール" />
+      <button type="submit">作成</button>
+    </form>
+  )
+}
+```
+
+### 判断フローチャート
+
+データベース操作を実装する際は、以下のフローで判断します:
+
+```
+ユーザーの操作が必要？
+├─ NO → Server Componentで初期データ取得（パターン2）
+│        例: ページ表示時のプラン一覧
+│
+└─ YES → 処理は複雑？
+    ├─ NO（単純なCRUD）→ Client Componentで直接DB操作（パターン1）
+    │                     例: 削除ボタン、いいねボタン
+    │
+    └─ YES → Client Component（UI） + Server Action（処理）（パターン3）
+              例: プラン作成+メンバー招待+通知
+
+```
+
+### セキュリティ: RLS（Row Level Security）
+
+SupabaseのRLSポリシーで、ユーザーが操作できるデータを制限します。これにより、Client Componentから直接DBにアクセスしても安全です。
+
+**RLSポリシー例:**
+
+```sql
+-- ユーザーは自分のプランのみ閲覧可能
+CREATE POLICY "Users can only see their own plans"
+ON travel_plans
+FOR SELECT
+USING (auth.uid() = user_id);
+
+-- ユーザーは自分のプランのみ削除可能
+CREATE POLICY "Users can only delete their own plans"
+ON travel_plans
+FOR DELETE
+USING (auth.uid() = user_id);
+```
+
+**効果:**
+
+```typescript
+'use client'
+// 悪意のあるユーザーが他人のプランを削除しようとしても...
+const supabase = createClient()
+await supabase.from('travel_plans').delete().eq('id', 'someone-elses-plan-id')
+
+// RLSポリシーが自動的にブロック!
+// → エラー: "You don't have permission"
+```
+
+### Next.js 15対応の注意点
+
+Next.js 15では`cookies()`が非同期になったため、Server Component用クライアントでは必ず`await`が必要です:
+
+```typescript
+// ✅ 正しい（Next.js 15）
+import { createClient } from '@/lib/supabase/server'
+
+export default async function Page() {
+  const supabase = await createClient()
+  const { data } = await supabase.from('users').select()
+  return <div>...</div>
+}
+
+// ❌ 間違い
+export default async function Page() {
+  const supabase = createClient() // await忘れ!
+  // ...
+}
+```
+
+### ベストプラクティス
+
+1. **✅ 推奨:**
+   - 単純なCRUDはClient Componentで直接DB操作
+   - 初期データはServer Componentで取得
+   - 複雑な処理はServer Actionに集約
+
+2. **❌ 非推奨:**
+   - `useEffect`でのデータフェッチ（Server Componentを使用）
+   - Service Role Keyの使用（RLSをバイパスするため危険）
+   - Client ComponentでのService Role Key使用（絶対禁止）
+
+3. **セキュリティチェックリスト:**
+   - [ ] すべてのテーブルにRLSポリシーが設定されている
+   - [ ] `NEXT_PUBLIC_SUPABASE_ANON_KEY`のみをClient Componentで使用
+   - [ ] Server Actionで認証チェックを実施
 
 ## コーディング規約
 
