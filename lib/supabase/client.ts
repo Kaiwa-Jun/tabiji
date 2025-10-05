@@ -1,10 +1,11 @@
 import { createBrowserClient } from '@supabase/ssr'
+import type { Database } from '@/types/database'
 
 /**
  * シングルトンのSupabaseクライアントインスタンス
  * ブラウザ側で1つのクライアントのみを生成・再利用します
  */
-let client: ReturnType<typeof createBrowserClient> | undefined
+let client: ReturnType<typeof createBrowserClient<Database>> | undefined
 
 /**
  * Client Component用のSupabaseクライアントを作成します。
@@ -54,7 +55,7 @@ export function createClient() {
       )
     }
 
-    client = createBrowserClient(supabaseUrl, supabaseAnonKey)
+    client = createBrowserClient<Database>(supabaseUrl, supabaseAnonKey)
   }
 
   return client
