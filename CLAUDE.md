@@ -31,6 +31,7 @@
 - **UIコンポーネント**: shadcn/uiを基盤として再利用可能なコンポーネントを構築
 - **コンポーネント分割**: 責任を明確にした小さいコンポーネント
 - **再利用性**: 共通UIは`components/ui`に配置
+- **TDD（テスト駆動開発）**: 実装はTDDで行う。詳細は`docs/tdd-guidelines.md`を参照
 - **テスト**: 重要な機能には必ずテストを追加
 
 ### ファイル構成
@@ -38,16 +39,42 @@
 ```text
 tabiji/
 ├── app/                    # Next.js App Router
+│   ├── api/               # API Routes
+│   │   └── webhook/       # LINE Bot Webhook
+│   ├── liff/              # LIFF アプリ
+│   │   ├── plan/          # プラン作成・詳細画面
+│   │   ├── plans/         # プラン一覧画面
+│   │   └── help/          # ヘルプ画面
 │   ├── layout.tsx         # ルートレイアウト
 │   └── page.tsx           # トップページ
 ├── actions/               # Server Actions（データ更新処理）
+│   ├── users.ts           # ユーザー関連
+│   ├── plans.ts           # プラン関連
+│   └── spots.ts           # スポット関連
 ├── components/            # Reactコンポーネント
-│   ├── ui/               # 再利用可能なUIコンポーネント
-│   └── [feature]/        # 機能別コンポーネント
+│   ├── ui/               # shadcn/ui コンポーネント
+│   ├── plan/             # プラン関連コンポーネント
+│   │   ├── steps/        # プラン作成ステップ
+│   │   └── tabs/         # 結果画面タブ
+│   ├── map/              # 地図関連コンポーネント
+│   ├── auth/             # 認証関連コンポーネント
+│   └── help/             # ヘルプ関連コンポーネント
 ├── lib/                  # ユーティリティ・ヘルパー関数
+│   ├── supabase/         # Supabase クライアント
+│   ├── liff/             # LIFF SDK ラッパー
+│   ├── line/             # LINE Messaging API ラッパー
+│   ├── maps/             # Google Maps API ラッパー
+│   ├── itinerary/        # 旅程最適化ロジック
+│   ├── schemas/          # Zodバリデーションスキーマ
+│   ├── queries/          # データベースクエリ
+│   └── constants/        # 定数定義
+├── contexts/             # React Context（状態管理）
 ├── hooks/                # カスタムReactフック
 ├── types/                # TypeScript型定義
-└── __tests__/            # テストファイル
+├── scripts/              # 開発・デプロイスクリプト
+├── __tests__/            # テストファイル
+└── public/               # 静的ファイル
+    └── rich-menu/        # リッチメニュー画像
 ```
 
 ## Server Actions
