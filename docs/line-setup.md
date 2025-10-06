@@ -607,7 +607,7 @@ LIFF IDは`.env.local`に保存します（コード内で使用するため）�
 # LIFF ID
 # 取得方法: LINE Developers Console > LINEログインチャンネル > LIFF > LIFF ID
 # 形式: 1234567890-abcdefgh
-NEXT_PUBLIC_LIFF_ID=2008239543-7vLMjwjj
+NEXT_PUBLIC_LIFF_ID=あなたのLIFF_ID
 ```
 
 **⚠️ 注意**:
@@ -621,7 +621,7 @@ NEXT_PUBLIC_LIFF_ID=2008239543-7vLMjwjj
 ユーザーがLIFFアプリにアクセスする際のURLは以下です:
 
 ```
-https://liff.line.me/2008239543-7vLMjwjj
+https://liff.line.me/あなたのLIFF_ID
 ```
 
 このURLは開発中のテストやQRコード生成時に使用できます。
