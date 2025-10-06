@@ -657,9 +657,9 @@ grep "^NEXT_PUBLIC_LIFF_ID=" .env.local
 **期待される出力:**
 
 ```bash
-LINE_CHANNEL_ACCESS_TOKEN=plo3gryNrbCJgL3wwGZpG...  # トークンの先頭部分
-LINE_CHANNEL_SECRET=830f9d4b6065da6d44abb9a3cd8cbc0c
-NEXT_PUBLIC_LIFF_ID=2008239543-7vLMjwjj
+LINE_CHANNEL_ACCESS_TOKEN=あなたのトークンの先頭...  # トークンの先頭部分
+LINE_CHANNEL_SECRET=あなたのチャンネルシークレット
+NEXT_PUBLIC_LIFF_ID=あなたのLIFF_ID
 ```
 
 ### 8-2. `.env.local`の完全な内容（参考）
@@ -669,13 +669,13 @@ NEXT_PUBLIC_LIFF_ID=2008239543-7vLMjwjj
 # LINE Developers（フェーズ2で設定）
 # -----------------------------------------------------------------------------
 # LINE チャンネルアクセストークン
-LINE_CHANNEL_ACCESS_TOKEN=plo3gryNrbCJgL3wwGZpG3qG4YAL3FoSItkLa8lx9DLNbPNOJeILf8eg4cU5EPqJEDZWkHs4w9i7hDilyM7+vbtrwTzpR9MwzH2uKt7vFOP98KInjy5AUF/ihKwzS4IGFczygp+KzinH/OG0a84r7AdB04t89/1O/w1cDnyilFU=
+LINE_CHANNEL_ACCESS_TOKEN=あなたのチャンネルアクセストークン
 
 # LINE チャンネルシークレット
-LINE_CHANNEL_SECRET=830f9d4b6065da6d44abb9a3cd8cbc0c
+LINE_CHANNEL_SECRET=あなたのチャンネルシークレット
 
 # LIFF ID
-NEXT_PUBLIC_LIFF_ID=2008239543-7vLMjwjj
+NEXT_PUBLIC_LIFF_ID=あなたのLIFF_ID
 ```
 
 ### ✅ 完了確認
