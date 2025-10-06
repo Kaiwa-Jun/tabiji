@@ -170,13 +170,5 @@ class LiffClient {
 
 /**
  * LiffClientのシングルトンインスタンスをエクスポート
- * ローカル開発時はモックを使用可能
  */
-export const liffClient =
-  process.env.NEXT_PUBLIC_LIFF_MOCK === 'true'
-    ? // モックモード（ローカル開発用）
-      (async () => {
-        const { mockLiffClient } = await import('./mock')
-        return mockLiffClient
-      })()
-    : LiffClient.getInstance()
+export const liffClient = LiffClient.getInstance()
