@@ -159,7 +159,7 @@ export default function HelpPage() {
         {/* フッター */}
         <div className="pt-6 border-t border-gray-200">
           <Link
-            href="/liff"
+            href="/"
             className="block text-center text-blue-600 hover:text-blue-700 text-sm"
           >
             ← トップに戻る

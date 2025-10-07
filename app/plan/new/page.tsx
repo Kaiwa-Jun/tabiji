@@ -93,7 +93,7 @@ export default function NewPlanPage() {
             </button>
 
             <Link
-              href="/liff/plans"
+              href="/plans"
               className="block w-full px-6 py-3 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors text-center"
             >
               キャンセル
@@ -104,7 +104,7 @@ export default function NewPlanPage() {
         {/* フッター */}
         <div className="mt-6 pt-6 border-t border-gray-200">
           <Link
-            href="/liff"
+            href="/"
             className="block text-center text-blue-600 hover:text-blue-700 text-sm"
           >
             ← トップに戻る

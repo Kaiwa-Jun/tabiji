@@ -17,7 +17,7 @@ export default function PlansPage() {
             📋 プラン一覧
           </h1>
           <Link
-            href="/liff/plan/new"
+            href="/plan/new"
             className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-semibold"
           >
             ＋ 新規作成
@@ -41,7 +41,7 @@ export default function PlansPage() {
             </p>
             <div className="flex gap-2">
               <Link
-                href="/liff/plan/1"
+                href="/plan/1"
                 className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm text-center hover:bg-gray-200 transition-colors"
               >
                 詳細
@@ -67,7 +67,7 @@ export default function PlansPage() {
             </p>
             <div className="flex gap-2">
               <Link
-                href="/liff/plan/2"
+                href="/plan/2"
                 className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 rounded text-sm text-center hover:bg-gray-200 transition-colors"
               >
                 詳細
@@ -97,7 +97,7 @@ export default function PlansPage() {
         {/* フッターナビゲーション */}
         <div className="pt-6 border-t border-gray-200">
           <Link
-            href="/liff"
+            href="/"
             className="block text-center text-blue-600 hover:text-blue-700 text-sm"
           >
             ← トップに戻る

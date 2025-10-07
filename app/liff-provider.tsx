@@ -239,7 +239,7 @@ export function LiffProvider({ children }: LiffProviderProps) {
             <ul className="list-disc list-inside space-y-1">
               <li>スマホのLINEアプリで画面を3回タップしてLIFF Inspectorを開く</li>
               <li>上記のデバッグ情報をスクリーンショットで保存</li>
-              <li>/liff/debug ページで詳細な環境情報を確認</li>
+              <li>/debug ページで詳細な環境情報を確認</li>
             </ul>
           </div>
         </div>
