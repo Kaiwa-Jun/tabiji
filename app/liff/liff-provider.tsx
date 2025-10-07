@@ -111,13 +111,15 @@ export function LiffProvider({ children }: LiffProviderProps) {
     const liffModeResult = isLiffMode()
     addDebugLog(`isLiffMode結果: ${liffModeResult}`)
 
-    // サーバーログにも出力
-    console.log('=== LIFF Mode 判定結果 ===')
-    console.log('isLiffMode:', liffModeResult)
-    console.log('URL:', window.location.href)
-    console.log('Hostname:', window.location.hostname)
-    console.log('Referrer:', document.referrer || '(なし)')
-    console.log('========================')
+    // 開発環境でのみログ出力
+    if (process.env.NODE_ENV === 'development') {
+      console.log('=== LIFF Mode 判定結果 ===')
+      console.log('isLiffMode:', liffModeResult)
+      console.log('URL:', window.location.href)
+      console.log('Hostname:', window.location.hostname)
+      console.log('Referrer:', document.referrer || '(なし)')
+      console.log('========================')
+    }
 
     if (!liffModeResult) {
       addDebugLog('[LIFF Provider] 開発モード: LIFF初期化をスキップします')
@@ -136,18 +138,15 @@ export function LiffProvider({ children }: LiffProviderProps) {
           addDebugLog('[LIFF Provider] 初期化成功!')
           setIsInitialized(true)
         } else if (result.error) {
-          const errorDetails = {
-            message: result.error.message,
-            stack: result.error.stack,
-            name: result.error.name,
+          // 開発環境でのみ詳細ログ出力
+          if (process.env.NODE_ENV === 'development') {
+            console.error('=== LIFF 初期化エラー詳細 ===')
+            console.error('エラーメッセージ:', result.error.message)
+            console.error('エラー名:', result.error.name)
+            console.error('スタックトレース:', result.error.stack)
+            console.error('デバッグ情報:', debugInfo)
+            console.error('============================')
           }
-          // サーバーログに詳細出力
-          console.error('=== LIFF 初期化エラー詳細 ===')
-          console.error('エラーメッセージ:', result.error.message)
-          console.error('エラー名:', result.error.name)
-          console.error('スタックトレース:', result.error.stack)
-          console.error('デバッグ情報:', debugInfo)
-          console.error('============================')
 
           addDebugLog(`[LIFF Provider] 初期化エラー: ${result.error.message}`)
           setError(result.error)
@@ -157,11 +156,13 @@ export function LiffProvider({ children }: LiffProviderProps) {
         // result.success === false かつ error がない場合はログインリダイレクト中
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Unknown error'
-        // サーバーログに詳細出力
-        console.error('=== LIFF Provider 予期しないエラー ===')
-        console.error('エラー:', err)
-        console.error('デバッグ情報:', debugInfo)
-        console.error('============================')
+        // 開発環境でのみ詳細ログ出力
+        if (process.env.NODE_ENV === 'development') {
+          console.error('=== LIFF Provider 予期しないエラー ===')
+          console.error('エラー:', err)
+          console.error('デバッグ情報:', debugInfo)
+          console.error('============================')
+        }
 
         addDebugLog(`[LIFF Provider] 予期しないエラー: ${errorMessage}`)
         setError(err instanceof Error ? err : new Error('Unknown error'))
