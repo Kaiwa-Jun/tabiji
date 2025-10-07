@@ -111,6 +111,14 @@ export function LiffProvider({ children }: LiffProviderProps) {
     const liffModeResult = isLiffMode()
     addDebugLog(`isLiffMode結果: ${liffModeResult}`)
 
+    // サーバーログにも出力
+    console.log('=== LIFF Mode 判定結果 ===')
+    console.log('isLiffMode:', liffModeResult)
+    console.log('URL:', window.location.href)
+    console.log('Hostname:', window.location.hostname)
+    console.log('Referrer:', document.referrer || '(なし)')
+    console.log('========================')
+
     if (!liffModeResult) {
       addDebugLog('[LIFF Provider] 開発モード: LIFF初期化をスキップします')
       setSkipInit(true)
@@ -128,6 +136,19 @@ export function LiffProvider({ children }: LiffProviderProps) {
           addDebugLog('[LIFF Provider] 初期化成功!')
           setIsInitialized(true)
         } else if (result.error) {
+          const errorDetails = {
+            message: result.error.message,
+            stack: result.error.stack,
+            name: result.error.name,
+          }
+          // サーバーログに詳細出力
+          console.error('=== LIFF 初期化エラー詳細 ===')
+          console.error('エラーメッセージ:', result.error.message)
+          console.error('エラー名:', result.error.name)
+          console.error('スタックトレース:', result.error.stack)
+          console.error('デバッグ情報:', debugInfo)
+          console.error('============================')
+
           addDebugLog(`[LIFF Provider] 初期化エラー: ${result.error.message}`)
           setError(result.error)
         } else {
@@ -136,6 +157,12 @@ export function LiffProvider({ children }: LiffProviderProps) {
         // result.success === false かつ error がない場合はログインリダイレクト中
       } catch (err) {
         const errorMessage = err instanceof Error ? err.message : 'Unknown error'
+        // サーバーログに詳細出力
+        console.error('=== LIFF Provider 予期しないエラー ===')
+        console.error('エラー:', err)
+        console.error('デバッグ情報:', debugInfo)
+        console.error('============================')
+
         addDebugLog(`[LIFF Provider] 予期しないエラー: ${errorMessage}`)
         setError(err instanceof Error ? err : new Error('Unknown error'))
       }
@@ -161,15 +188,20 @@ export function LiffProvider({ children }: LiffProviderProps) {
     return (
       <div className="flex min-h-screen items-center justify-center p-4">
         <div className="max-w-2xl w-full bg-red-50 border border-red-200 rounded-lg p-6">
-          <h2 className="text-lg font-bold text-red-800 mb-2">
-            LIFF 初期化エラー
+          <h2 className="text-2xl font-bold text-red-800 mb-4">
+            ⚠️ LIFF 初期化エラー
           </h2>
-          <p className="text-red-700 mb-4">{error.message}</p>
 
-          {/* デバッグ情報の表示 */}
-          <details className="mb-4">
-            <summary className="cursor-pointer text-sm font-semibold text-red-800 hover:text-red-900 select-none">
-              🔍 デバッグ情報を表示（クリックで展開）
+          {/* エラーメッセージを大きく表示 */}
+          <div className="bg-red-100 border-2 border-red-300 rounded p-4 mb-4">
+            <p className="text-base font-semibold text-red-900 mb-2">エラー内容:</p>
+            <p className="text-red-800 font-mono text-sm break-all">{error.message}</p>
+          </div>
+
+          {/* デバッグ情報を最初から展開 */}
+          <details open className="mb-4">
+            <summary className="cursor-pointer text-base font-bold text-red-800 hover:text-red-900 select-none mb-2">
+              🔍 デバッグ情報（詳細ログ）
             </summary>
             <div className="mt-3 bg-red-100 rounded p-3 max-h-96 overflow-auto">
               <pre className="text-xs font-mono text-red-900 whitespace-pre-wrap break-all">
