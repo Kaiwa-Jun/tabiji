@@ -38,10 +38,29 @@ describe('lib/liff/client', () => {
       expect(mockLiff.getProfile).toHaveBeenCalledTimes(1)
     })
 
-    it('エラー時は例外をスローする', async () => {
+    it('エラー時はモックプロフィールを返す', async () => {
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation()
+      const consoleWarnSpy = jest.spyOn(console, 'warn').mockImplementation()
       mockLiff.getProfile.mockRejectedValue(new Error('Test error'))
 
-      await expect(liffClient.getProfile()).rejects.toThrow('Test error')
+      const profile = await liffClient.getProfile()
+
+      expect(profile).toEqual({
+        userId: 'mock-user-id-error',
+        displayName: 'モックユーザー',
+        pictureUrl: 'https://via.placeholder.com/150',
+        statusMessage: undefined,
+      })
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        'Failed to get LIFF profile:',
+        expect.any(Error)
+      )
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        '[LIFF Mock] エラーのためモックプロフィールを返します'
+      )
+
+      consoleErrorSpy.mockRestore()
+      consoleWarnSpy.mockRestore()
     })
   })
 

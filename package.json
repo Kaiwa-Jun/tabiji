@@ -4,6 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
+    "dev:liff": "NGROK_AUTHTOKEN=33hRm7hGHcu2cJt4QYCX7Beafiu_7fFXgn2s6BbM7DKyp8CHG liff-cli serve --liff-id 2008239543-7vLMjwjj --url http://localhost:3000 --proxy-type ngrok",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
