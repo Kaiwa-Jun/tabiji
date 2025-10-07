@@ -32,6 +32,17 @@ class LiffClient {
    */
   public async getProfile(): Promise<LiffUserProfile> {
     try {
+      // PC開発環境ではモックデータを返す
+      if (!this.isInClient() && !liff.isLoggedIn()) {
+        console.warn('[LIFF Mock] モックプロフィールを返します（開発環境）')
+        return {
+          userId: 'mock-user-id-12345',
+          displayName: 'テストユーザー',
+          pictureUrl: 'https://via.placeholder.com/150',
+          statusMessage: '開発環境のモックデータです',
+        }
+      }
+
       const profile = await liff.getProfile()
       return {
         userId: profile.userId,
@@ -41,7 +52,14 @@ class LiffClient {
       }
     } catch (error) {
       console.error('Failed to get LIFF profile:', error)
-      throw error
+      // エラー時もモックデータを返す（PC開発継続可能）
+      console.warn('[LIFF Mock] エラーのためモックプロフィールを返します')
+      return {
+        userId: 'mock-user-id-error',
+        displayName: 'モックユーザー',
+        pictureUrl: 'https://via.placeholder.com/150',
+        statusMessage: undefined,
+      }
     }
   }
 
@@ -59,7 +77,14 @@ class LiffClient {
       }
     } catch (error) {
       console.error('Failed to get LIFF environment:', error)
-      throw error
+      // エラー時はモック環境情報を返す（PC開発継続可能）
+      console.warn('[LIFF Mock] モック環境情報を返します')
+      return {
+        isInClient: false,
+        os: 'web',
+        language: 'ja',
+        version: 'mock-2.0.0',
+      }
     }
   }
 
