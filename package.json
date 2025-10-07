@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "dev:liff": "liff-cli serve --liff-id 2008239543-7vLMjwjj --url http://localhost:3000 --proxy-type ngrok",
+    "dev:liff": "sh -c 'export $(grep NGROK_AUTHTOKEN .env.local | xargs) && liff-cli serve --liff-id 2008239543-7vLMjwjj --url http://localhost:3000 --proxy-type ngrok'",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
