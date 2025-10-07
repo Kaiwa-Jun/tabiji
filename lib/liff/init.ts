@@ -14,37 +14,74 @@ import type { LiffInitConfig, LiffInitResult } from './types'
 export async function initializeLiff(
   config?: LiffInitConfig
 ): Promise<LiffInitResult> {
+  console.log('[LIFF Init] =================================')
+  console.log('[LIFF Init] LIFF SDK初期化処理を開始します')
+
   try {
     // ブラウザ環境でのみ実行可能
     if (typeof window === 'undefined') {
-      throw new Error('LIFF can only be initialized in browser environment')
+      const error = new Error('LIFF can only be initialized in browser environment')
+      console.error('[LIFF Init] エラー: サーバーサイドでの実行は不可', error)
+      throw error
     }
+    console.log('[LIFF Init] ✓ ブラウザ環境を確認')
 
     // LIFF IDの取得（引数 > 環境変数）
     const liffId = config?.liffId || process.env.NEXT_PUBLIC_LIFF_ID
+    console.log('[LIFF Init] LIFF ID取得:', liffId ? `${liffId.substring(0, 15)}...` : '(未設定)')
 
     if (!liffId) {
-      throw new Error(
+      const error = new Error(
         'LIFF ID is not defined. Please set NEXT_PUBLIC_LIFF_ID in .env.local'
       )
+      console.error('[LIFF Init] エラー: LIFF IDが設定されていません')
+      console.error('[LIFF Init] 環境変数 NEXT_PUBLIC_LIFF_ID を .env.local に設定してください')
+      throw error
     }
+    console.log('[LIFF Init] ✓ LIFF ID確認完了')
 
     // LIFF SDK初期化
-    await liff.init({
+    const initConfig = {
       liffId,
       withLoginOnExternalBrowser: config?.withLoginOnExternalBrowser ?? true,
-    })
+    }
+    console.log('[LIFF Init] liff.init()を呼び出します:', initConfig)
+
+    await liff.init(initConfig)
+    console.log('[LIFF Init] ✓ liff.init()成功')
+
+    // LIFF SDKの状態を確認
+    console.log('[LIFF Init] LIFF SDK状態:')
+    console.log('[LIFF Init] - isInClient():', liff.isInClient())
+    console.log('[LIFF Init] - getOS():', liff.getOS())
+    console.log('[LIFF Init] - getVersion():', liff.getVersion())
+    console.log('[LIFF Init] - isLoggedIn():', liff.isLoggedIn())
 
     // ログイン状態の確認
     if (!liff.isLoggedIn()) {
+      console.log('[LIFF Init] 未ログイン状態を検出')
+      console.log('[LIFF Init] liff.login()でLINEログイン画面へリダイレクトします')
       // 未ログイン時は自動的にログイン画面へリダイレクト
       liff.login()
       return { success: false }
     }
 
+    console.log('[LIFF Init] ✓ ログイン済み')
+    console.log('[LIFF Init] 🎉 LIFF初期化完了!')
+    console.log('[LIFF Init] =================================')
     return { success: true }
   } catch (error) {
-    console.error('LIFF initialization failed:', error)
+    console.error('[LIFF Init] =================================')
+    console.error('[LIFF Init] ❌ 初期化エラーが発生しました')
+    console.error('[LIFF Init] エラー詳細:', error)
+
+    if (error instanceof Error) {
+      console.error('[LIFF Init] - メッセージ:', error.message)
+      console.error('[LIFF Init] - スタックトレース:', error.stack)
+    }
+
+    console.error('[LIFF Init] =================================')
+
     return {
       success: false,
       error: error instanceof Error ? error : new Error('Unknown error'),

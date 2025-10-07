@@ -153,7 +153,7 @@ export default function LiffTestPage() {
                     try {
                       await liffClient.sendMessages('LIFF動作確認テスト')
                       alert('メッセージを送信しました')
-                    } catch (err) {
+                    } catch {
                       alert('メッセージ送信に失敗しました')
                     }
                   }}
