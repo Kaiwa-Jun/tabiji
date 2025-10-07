@@ -45,9 +45,20 @@ const isLiffMode = () => {
     return true
   }
 
-  // ngrok/cloudflare経由でのアクセスをチェック
+  // ngrok/cloudflare経由でのアクセスをチェック（Referrer）
   if (document.referrer && (document.referrer.includes('ngrok-free.dev') || document.referrer.includes('ngrok.io'))) {
-    console.log('[LIFF Mode] ngrok経由でのアクセスを検出:', document.referrer)
+    console.log('[LIFF Mode] ngrok経由でのアクセスを検出（Referrer）:', document.referrer)
+    try {
+      localStorage.setItem('_tabiji_liff_accessed', 'true')
+    } catch (e) {
+      console.warn('[LIFF Mode] LocalStorage保存失敗:', e)
+    }
+    return true
+  }
+
+  // ngrok/cloudflare URLでのアクセスをチェック（ホスト名）
+  if (window.location.hostname.includes('ngrok-free.dev') || window.location.hostname.includes('ngrok.io')) {
+    console.log('[LIFF Mode] ngrok URLでのアクセスを検出:', window.location.hostname)
     try {
       localStorage.setItem('_tabiji_liff_accessed', 'true')
     } catch (e) {
