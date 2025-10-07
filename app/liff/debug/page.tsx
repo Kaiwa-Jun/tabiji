@@ -1,6 +1,8 @@
 /**
  * LIFF デバッグ情報ページ
  * 環境情報、LIFF状態、エラー情報を全て表示してデバッグを支援
+ *
+ * セキュリティ: 本番環境ではアクセス制限あり
  */
 
 'use client'
@@ -9,6 +11,10 @@ import { useEffect, useState } from 'react'
 import { liffClient } from '@/lib/liff/client'
 import { getLiffVersion } from '@/lib/liff/init'
 import type { LiffUserProfile, LiffEnvironment } from '@/lib/liff/types'
+
+// 本番環境でのアクセス制限
+const isProductionEnvironment = process.env.NODE_ENV === 'production'
+const isDebugAllowed = !isProductionEnvironment || process.env.NEXT_PUBLIC_ENABLE_DEBUG === 'true'
 
 interface DebugInfo {
   // 環境変数
@@ -61,6 +67,11 @@ export default function LiffDebugPage() {
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
+    // 本番環境でのアクセス制限チェック
+    if (!isDebugAllowed) {
+      setLoading(false)
+      return
+    }
     const collectDebugInfo = async () => {
       try {
         // URLパラメータを解析
@@ -169,6 +180,27 @@ export default function LiffDebugPage() {
 
     collectDebugInfo()
   }, [])
+
+  // 本番環境でのアクセス制限表示
+  if (!isDebugAllowed && !loading) {
+    return (
+      <div className="flex min-h-screen items-center justify-center p-4 bg-gray-50">
+        <div className="max-w-md w-full bg-white border border-gray-200 rounded-lg p-8 text-center">
+          <div className="text-6xl mb-4">🔒</div>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            アクセス制限
+          </h1>
+          <p className="text-gray-600 mb-4">
+            本番環境ではデバッグページにアクセスできません。
+          </p>
+          <div className="text-sm text-gray-500 bg-gray-50 p-3 rounded">
+            <p className="font-semibold mb-1">開発者向け:</p>
+            <p>環境変数 <code className="bg-gray-200 px-1 rounded">NEXT_PUBLIC_ENABLE_DEBUG=true</code> を設定してください。</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   if (loading) {
     return (
