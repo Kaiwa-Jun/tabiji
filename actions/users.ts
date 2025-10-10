@@ -14,6 +14,27 @@ export async function registerOrUpdateUser(
   profile: LiffUserProfile
 ): Promise<{ data: User | null; error: string | null }> {
   try {
+    // 入力値の検証
+    if (!profile.userId || profile.userId.trim() === '') {
+      console.error('[registerOrUpdateUser] Invalid userId:', profile.userId)
+      return {
+        data: null,
+        error: 'ユーザーIDが無効です',
+      }
+    }
+
+    // LINE User IDの形式チェック（Uで始まる33文字）
+    if (!profile.userId.startsWith('U') || profile.userId.length !== 33) {
+      console.error(
+        '[registerOrUpdateUser] Invalid LINE User ID format:',
+        profile.userId
+      )
+      return {
+        data: null,
+        error: 'LINE User IDの形式が無効です',
+      }
+    }
+
     const supabase = await createClient()
 
     // 1. 既存ユーザーを検索
@@ -101,6 +122,27 @@ export async function getUserByLineId(
   lineUserId: string
 ): Promise<{ data: User | null; error: string | null }> {
   try {
+    // 入力値の検証
+    if (!lineUserId || lineUserId.trim() === '') {
+      console.error('[getUserByLineId] Invalid lineUserId:', lineUserId)
+      return {
+        data: null,
+        error: 'ユーザーIDが無効です',
+      }
+    }
+
+    // LINE User IDの形式チェック
+    if (!lineUserId.startsWith('U') || lineUserId.length !== 33) {
+      console.error(
+        '[getUserByLineId] Invalid LINE User ID format:',
+        lineUserId
+      )
+      return {
+        data: null,
+        error: 'LINE User IDの形式が無効です',
+      }
+    }
+
     const supabase = await createClient()
 
     const { data, error } = await supabase

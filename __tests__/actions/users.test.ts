@@ -30,7 +30,7 @@ describe('Server Actions: users.ts', () => {
   describe('registerOrUpdateUser', () => {
     it('新規ユーザーを作成できる', async () => {
       const profile: LiffUserProfile = {
-        userId: 'U1234567890abcdef',
+        userId: 'U1234567890abcdef1234567890abcdef', // 33文字のLINE User ID
         displayName: 'テストユーザー',
         pictureUrl: 'https://example.com/test.jpg',
         statusMessage: 'テスト中',
@@ -97,7 +97,7 @@ describe('Server Actions: users.ts', () => {
 
     it('既存ユーザーを更新できる', async () => {
       const profile: LiffUserProfile = {
-        userId: 'U1234567890abcdef',
+        userId: 'U1234567890abcdef1234567890abcdef', // 33文字のLINE User ID
         displayName: '更新済みユーザー',
         pictureUrl: 'https://example.com/updated.jpg',
       }
@@ -154,7 +154,7 @@ describe('Server Actions: users.ts', () => {
 
     it('pictureUrlがない場合でも登録できる', async () => {
       const profile: LiffUserProfile = {
-        userId: 'U1234567890abcdef',
+        userId: 'U1234567890abcdef1234567890abcdef', // 33文字のLINE User ID
         displayName: '画像なしユーザー',
         // pictureUrlなし
       }
@@ -213,9 +213,11 @@ describe('Server Actions: users.ts', () => {
 
   describe('getUserByLineId', () => {
     it('LINE User IDでユーザーを取得できる', async () => {
+      const testLineUserId = 'U1234567890abcdef1234567890abcdef' // 33文字
+
       const mockUser: User = {
         id: 'user-id-123',
-        line_user_id: 'U1234567890abcdef',
+        line_user_id: testLineUserId,
         display_name: '取得テストユーザー',
         picture_url: null,
         created_at: '2025-01-01T00:00:00Z',
@@ -233,15 +235,17 @@ describe('Server Actions: users.ts', () => {
         }),
       })
 
-      const result = await getUserByLineId('U1234567890abcdef')
+      const result = await getUserByLineId(testLineUserId)
 
       expect(result.error).toBeNull()
       expect(result.data).not.toBeNull()
-      expect(result.data?.line_user_id).toBe('U1234567890abcdef')
+      expect(result.data?.line_user_id).toBe(testLineUserId)
       expect(result.data?.display_name).toBe('取得テストユーザー')
     })
 
     it('存在しないLINE User IDの場合はnullを返す', async () => {
+      const nonExistentId = 'U99999999999999999999999999999999' // 33文字 (実際の9の数:32個)
+
       mockFrom.mockReturnValue({
         select: jest.fn().mockReturnValue({
           eq: jest.fn().mockReturnValue({
@@ -253,7 +257,7 @@ describe('Server Actions: users.ts', () => {
         }),
       })
 
-      const result = await getUserByLineId('non-existent-id')
+      const result = await getUserByLineId(nonExistentId)
 
       expect(result.error).toBeNull()
       expect(result.data).toBeNull()

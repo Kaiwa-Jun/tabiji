@@ -5,6 +5,7 @@ import {
   useContext,
   useEffect,
   useState,
+  useMemo,
   type ReactNode,
 } from 'react'
 import { liffClient } from '@/lib/liff/client'
@@ -103,15 +104,20 @@ export function AuthProvider({ children }: AuthProviderProps) {
    */
   useEffect(() => {
     fetchUser()
+     
   }, [])
 
-  const value: AuthContextType = {
-    user,
-    isLoading,
-    isInitialized,
-    logout,
-    refetch: fetchUser,
-  }
+  // Context値をメモ化して不要な再レンダリングを防ぐ
+  const value: AuthContextType = useMemo(
+    () => ({
+      user,
+      isLoading,
+      isInitialized,
+      logout,
+      refetch: fetchUser,
+    }),
+    [user, isLoading, isInitialized]
+  )
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>
 }

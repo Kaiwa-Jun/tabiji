@@ -5,6 +5,7 @@
 
 import { LiffProvider } from './liff-provider'
 import { AuthProvider } from '@/contexts/auth-context'
+import { ErrorBoundary } from '@/components/error-boundary'
 
 export default function LiffLayout({
   children,
@@ -12,8 +13,10 @@ export default function LiffLayout({
   children: React.ReactNode
 }) {
   return (
-    <LiffProvider>
-      <AuthProvider>{children}</AuthProvider>
-    </LiffProvider>
+    <ErrorBoundary>
+      <LiffProvider>
+        <AuthProvider>{children}</AuthProvider>
+      </LiffProvider>
+    </ErrorBoundary>
   )
 }
