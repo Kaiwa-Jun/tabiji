@@ -1,56 +1,26 @@
 /**
  * LIFF動作確認用テストページ
+ * useAuth()フックと認証コンポーネントの動作確認
  */
 
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useAuth } from '@/contexts/auth-context'
+import { UserProfile } from '@/components/auth/user-profile'
+import { LogoutButton } from '@/components/auth/logout-button'
 import { liffClient } from '@/lib/liff/client'
-import type { LiffUserProfile, LiffEnvironment } from '@/lib/liff/types'
 
 export default function LiffTestPage() {
-  const [profile, setProfile] = useState<LiffUserProfile | null>(null)
-  const [environment, setEnvironment] = useState<LiffEnvironment | null>(null)
-  const [error, setError] = useState<string | null>(null)
-  const [loading, setLoading] = useState(true)
+  const { user, isLoading, isInitialized } = useAuth()
+  const environment = liffClient.getEnvironment()
 
-  useEffect(() => {
-    const loadData = async () => {
-      try {
-        // プロフィール取得
-        const userProfile = await liffClient.getProfile()
-        setProfile(userProfile)
-
-        // 環境情報取得
-        const env = liffClient.getEnvironment()
-        setEnvironment(env)
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'エラーが発生しました')
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    loadData()
-  }, [])
-
-  if (loading) {
+  // 初期化中
+  if (!isInitialized) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="text-center">
           <div className="mb-4 h-12 w-12 animate-spin rounded-full border-4 border-gray-200 border-t-blue-600 mx-auto" />
-          <p className="text-gray-600">データ読み込み中...</p>
-        </div>
-      </div>
-    )
-  }
-
-  if (error) {
-    return (
-      <div className="min-h-screen p-4">
-        <div className="max-w-md mx-auto bg-red-50 border border-red-200 rounded-lg p-6">
-          <h2 className="text-lg font-bold text-red-800 mb-2">エラー</h2>
-          <p className="text-red-700">{error}</p>
+          <p className="text-gray-600">認証情報を読み込み中...</p>
         </div>
       </div>
     )
@@ -65,57 +35,78 @@ export default function LiffTestPage() {
             LIFF 動作確認
           </h1>
           <p className="text-sm text-gray-600">
-            LIFF SDKが正しく動作しているか確認します
+            認証Context（useAuth）とUIコンポーネントの動作確認
           </p>
         </div>
 
-        {/* ユーザープロフィール */}
-        {profile && (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-              <span className="mr-2">👤</span>
-              ユーザープロフィール
-            </h2>
-            <div className="space-y-3">
-              {profile.pictureUrl && (
-                <div className="flex justify-center mb-4">
-                  <img
-                    src={profile.pictureUrl}
-                    alt={profile.displayName}
-                    className="w-24 h-24 rounded-full border-4 border-gray-200"
-                  />
-                </div>
-              )}
-              <div className="grid grid-cols-1 gap-3">
-                <InfoItem label="表示名" value={profile.displayName} />
-                <InfoItem label="ユーザーID" value={profile.userId} />
-                {profile.statusMessage && (
-                  <InfoItem label="ステータス" value={profile.statusMessage} />
+        {/* 認証状態 */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+            <span className="mr-2">🔐</span>
+            認証状態
+          </h2>
+          <div className="space-y-4">
+            <div className="flex items-start border-b border-gray-100 pb-2">
+              <dt className="font-medium text-gray-700 w-32 flex-shrink-0">
+                ステータス
+              </dt>
+              <dd className="flex-1">
+                {isLoading && (
+                  <span className="text-yellow-600">読み込み中...</span>
                 )}
-              </div>
+                {!isLoading && user && (
+                  <span className="text-green-600 font-semibold">
+                    ログイン済み
+                  </span>
+                )}
+                {!isLoading && !user && (
+                  <span className="text-red-600 font-semibold">未ログイン</span>
+                )}
+              </dd>
+            </div>
+            <div className="flex items-start border-b border-gray-100 pb-2">
+              <dt className="font-medium text-gray-700 w-32 flex-shrink-0">
+                ユーザーID
+              </dt>
+              <dd className="flex-1 text-gray-900">{user?.id || '-'}</dd>
+            </div>
+            <div className="flex items-start border-b border-gray-100 pb-2">
+              <dt className="font-medium text-gray-700 w-32 flex-shrink-0">
+                LINE User ID
+              </dt>
+              <dd className="flex-1 text-gray-900">
+                {user?.line_user_id || '-'}
+              </dd>
             </div>
           </div>
-        )}
+        </div>
+
+        {/* ユーザープロフィール */}
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+            <span className="mr-2">👤</span>
+            ユーザープロフィール
+          </h2>
+          <UserProfile />
+        </div>
 
         {/* 環境情報 */}
-        {environment && (
-          <div className="bg-white rounded-lg shadow p-6">
-            <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-              <span className="mr-2">⚙️</span>
-              環境情報
-            </h2>
-            <div className="grid grid-cols-1 gap-3">
-              <InfoItem
-                label="実行環境"
-                value={environment.isInClient ? 'LINEアプリ内' : '外部ブラウザ'}
-                highlight={environment.isInClient}
-              />
-              <InfoItem label="OS" value={environment.os} />
-              <InfoItem label="言語" value={environment.language} />
-              <InfoItem label="SDKバージョン" value={environment.version} />
-            </div>
+        <div className="bg-white rounded-lg shadow p-6">
+          <h2 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
+            <span className="mr-2">⚙️</span>
+            環境情報
+          </h2>
+          <div className="grid grid-cols-1 gap-3">
+            <InfoItem
+              label="実行環境"
+              value={environment.isInClient ? 'LINEアプリ内' : '外部ブラウザ'}
+              highlight={environment.isInClient}
+            />
+            <InfoItem label="OS" value={environment.os} />
+            <InfoItem label="言語" value={environment.language} />
+            <InfoItem label="SDKバージョン" value={environment.version} />
           </div>
-        )}
+        </div>
 
         {/* アクション */}
         <div className="bg-white rounded-lg shadow p-6">
@@ -146,7 +137,7 @@ export default function LiffTestPage() {
               }}
               label="IDトークン確認"
             />
-            {environment?.isInClient && (
+            {environment.isInClient && (
               <>
                 <ActionButton
                   onClick={async () => {
@@ -170,21 +161,15 @@ export default function LiffTestPage() {
                 />
               </>
             )}
-            <ActionButton
-              onClick={() => {
-                if (confirm('ログアウトしますか？')) {
-                  liffClient.logout()
-                }
-              }}
-              label="ログアウト"
-              variant="danger"
-            />
+            <div className="pt-2">
+              <LogoutButton />
+            </div>
           </div>
         </div>
 
         {/* フッター */}
         <div className="text-center text-sm text-gray-500 py-4">
-          <p>LIFF SDK v2.26.1 | tabiji</p>
+          <p>LIFF SDK v2.26.1 | tabiji | Auth Context統合版</p>
         </div>
       </div>
     </div>
