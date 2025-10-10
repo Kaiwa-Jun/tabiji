@@ -1,10 +1,11 @@
 import type { MessageEvent, TextMessage } from '@line/bot-sdk'
+import { lineMessaging } from '@/lib/line/messaging'
 
 /**
  * メッセージイベントを処理
  *
  * ユーザーから送信されたメッセージを受信し、内容に応じた処理を行います。
- * 現在はログ出力のみ。メッセージ送信機能は #26 で実装予定。
+ * テキストメッセージに対してエコーバックを返信します。
  *
  * @param event - LINE Messageイベント
  *
@@ -25,15 +26,25 @@ export async function handleMessageEvent(event: MessageEvent): Promise<void> {
   // テキストメッセージの処理
   if (message.type === 'text') {
     const textMessage = message as TextMessage
+    const text = textMessage.text.trim()
 
     console.log('Text message received:', {
       userId,
-      text: textMessage.text,
+      text,
       messageId: message.id,
       timestamp: event.timestamp,
     })
 
-    // メッセージ内容に応じた処理（#26で実装）
+    // エコーバック機能（テスト用）
+    try {
+      await lineMessaging.replyText(event.replyToken, `受信しました: ${text}`)
+      console.log(`Replied to user ${userId}: ${text}`)
+    } catch (error) {
+      console.error('Failed to reply message:', error)
+      // エラーが発生してもスローしない（LINEへのWebhook応答は既に返しているため）
+    }
+
+    // TODO: メッセージ内容に応じた処理を追加（将来実装）
     // 例:
     // - 「プラン作成」→ LIFF起動メッセージ送信
     // - 「ヘルプ」→ ヘルプメッセージ送信
