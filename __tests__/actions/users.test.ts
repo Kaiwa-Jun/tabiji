@@ -209,6 +209,136 @@ describe('Server Actions: users.ts', () => {
       expect(result.error).toBeNull()
       expect(result.data?.picture_url).toBeNull()
     })
+
+    it('statusMessageを保存できる', async () => {
+      const profile: LiffUserProfile = {
+        userId: 'U1234567890abcdef1234567890abcdef', // 33文字のLINE User ID
+        displayName: 'ステータスありユーザー',
+        statusMessage: '今日はいい天気ですね',
+      }
+
+      const mockUser: User = {
+        id: 'user-id-123',
+        line_user_id: profile.userId,
+        display_name: profile.displayName,
+        picture_url: null,
+        created_at: '2025-01-01T00:00:00Z',
+        updated_at: '2025-01-01T00:00:00Z',
+      }
+
+      // 既存ユーザー検索: 見つからない
+      mockFrom.mockReturnValueOnce({
+        select: jest.fn().mockReturnValue({
+          eq: jest.fn().mockReturnValue({
+            maybeSingle: jest.fn().mockResolvedValue({
+              data: null,
+              error: null,
+            }),
+          }),
+        }),
+      })
+
+      // 新規ユーザー作成
+      mockFrom.mockReturnValueOnce({
+        insert: jest.fn().mockReturnValue({
+          select: jest.fn().mockReturnValue({
+            single: jest.fn().mockResolvedValue({
+              data: mockUser,
+              error: null,
+            }),
+          }),
+        }),
+      })
+
+      // user_settings作成
+      mockFrom.mockReturnValueOnce({
+        insert: jest.fn().mockReturnValue({
+          select: jest.fn().mockReturnValue({
+            single: jest.fn().mockResolvedValue({
+              data: {},
+              error: null,
+            }),
+          }),
+        }),
+      })
+
+      const result = await registerOrUpdateUser(profile)
+
+      expect(result.error).toBeNull()
+      expect(result.data).not.toBeNull()
+    })
+
+    it('空のuserIdの場合はエラーを返す', async () => {
+      const profile: LiffUserProfile = {
+        userId: '',
+        displayName: 'テストユーザー',
+      }
+
+      const result = await registerOrUpdateUser(profile)
+
+      expect(result.error).toBe('ユーザーIDが無効です')
+      expect(result.data).toBeNull()
+    })
+
+    it('不正な形式のLINE User ID（短すぎる）の場合はエラーを返す', async () => {
+      const profile: LiffUserProfile = {
+        userId: 'U123', // 33文字未満
+        displayName: 'テストユーザー',
+      }
+
+      const result = await registerOrUpdateUser(profile)
+
+      expect(result.error).toBe('LINE User IDの形式が無効です')
+      expect(result.data).toBeNull()
+    })
+
+    it('不正な形式のLINE User ID（Uで始まらない）の場合はエラーを返す', async () => {
+      const profile: LiffUserProfile = {
+        userId: 'X1234567890abcdef1234567890abcdef', // Uで始まらない
+        displayName: 'テストユーザー',
+      }
+
+      const result = await registerOrUpdateUser(profile)
+
+      expect(result.error).toBe('LINE User IDの形式が無効です')
+      expect(result.data).toBeNull()
+    })
+
+    it('データベースエラー時は適切にエラーハンドリングされる', async () => {
+      const profile: LiffUserProfile = {
+        userId: 'U1234567890abcdef1234567890abcdef',
+        displayName: 'テストユーザー',
+      }
+
+      // 既存ユーザー検索: 見つからない
+      mockFrom.mockReturnValueOnce({
+        select: jest.fn().mockReturnValue({
+          eq: jest.fn().mockReturnValue({
+            maybeSingle: jest.fn().mockResolvedValue({
+              data: null,
+              error: null,
+            }),
+          }),
+        }),
+      })
+
+      // 新規ユーザー作成: エラー発生
+      mockFrom.mockReturnValueOnce({
+        insert: jest.fn().mockReturnValue({
+          select: jest.fn().mockReturnValue({
+            single: jest.fn().mockResolvedValue({
+              data: null,
+              error: { message: 'Database connection error' },
+            }),
+          }),
+        }),
+      })
+
+      const result = await registerOrUpdateUser(profile)
+
+      expect(result.error).not.toBeNull()
+      expect(result.data).toBeNull()
+    })
   })
 
   describe('getUserByLineId', () => {
@@ -260,6 +390,20 @@ describe('Server Actions: users.ts', () => {
       const result = await getUserByLineId(nonExistentId)
 
       expect(result.error).toBeNull()
+      expect(result.data).toBeNull()
+    })
+
+    it('空のLINE User IDの場合はエラーを返す', async () => {
+      const result = await getUserByLineId('')
+
+      expect(result.error).toBe('ユーザーIDが無効です')
+      expect(result.data).toBeNull()
+    })
+
+    it('不正な形式のLINE User IDの場合はエラーを返す', async () => {
+      const result = await getUserByLineId('invalid-id')
+
+      expect(result.error).toBe('LINE User IDの形式が無効です')
       expect(result.data).toBeNull()
     })
   })

@@ -51,6 +51,7 @@ export async function registerOrUpdateUser(
         .update({
           display_name: profile.displayName,
           picture_url: profile.pictureUrl,
+          status_message: profile.statusMessage,
           updated_at: new Date().toISOString(),
         })
         .eq('line_user_id', profile.userId)
@@ -72,6 +73,7 @@ export async function registerOrUpdateUser(
           line_user_id: profile.userId,
           display_name: profile.displayName,
           picture_url: profile.pictureUrl,
+          status_message: profile.statusMessage,
         })
         .select()
         .single()
