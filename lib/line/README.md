@@ -7,10 +7,11 @@ LINE Messaging API を使用したBot機能のラッパーを配置します。
 ```
 line/
 ├── validate.ts         # ✅ Webhook 署名検証（実装済み）
+├── messaging.ts        # ✅ Messaging API ラッパー（実装済み - #26）
 ├── handlers/           # メッセージハンドラー
-│   └── message.ts      # ✅ メッセージイベントハンドラー（実装済み）
-├── messaging.ts        # Messaging API ラッパー（#26で実装予定）
-└── flex-messages.ts    # Flex Message テンプレート（#26で実装予定）
+│   ├── message.ts      # ✅ メッセージイベントハンドラー（実装済み）
+│   └── follow.ts       # ✅ フォローイベントハンドラー（実装済み - #26）
+└── flex-messages.ts    # Flex Message テンプレート（将来実装 - #59）
 ```
 
 ## 実装済み機能
@@ -48,6 +49,43 @@ const isValid = validateSignature(body, signature, process.env.LINE_CHANNEL_SECR
 
 ---
 
+### Messaging APIラッパー (`messaging.ts`)
+
+LINE Messaging APIを使用してメッセージを送信します。
+
+**実装機能:**
+
+- ✅ `replyText()` - Reply APIでテキスト送信
+- ✅ `pushText()` - Push APIでテキスト送信
+- ✅ `replyMessages()` - 複数メッセージのReply送信
+- ✅ `pushMessages()` - 複数メッセージのPush送信
+- ✅ `getProfile()` - ユーザープロフィール取得
+
+**使用例:**
+
+```typescript
+import { lineMessaging } from '@/lib/line/messaging'
+
+// Reply API（イベント応答）
+await lineMessaging.replyText(replyToken, 'こんにちは')
+
+// Push API（任意のタイミング）
+await lineMessaging.pushText(userId, 'プラン作成完了しました')
+```
+
+**エラーハンドリング:**
+
+- 400エラー: 無効なReply Token
+- 403エラー: ユーザーブロック
+- その他: サーバーエラー
+
+**セキュリティ:**
+
+- 環境変数から`LINE_CHANNEL_ACCESS_TOKEN`と`LINE_CHANNEL_SECRET`を取得
+- 未設定時はエラーをスロー
+
+---
+
 ### メッセージハンドラー (`handlers/message.ts`)
 
 LINE ユーザーからのメッセージイベントを処理します。
@@ -65,30 +103,36 @@ LINE ユーザーからのメッセージイベントを処理します。
 **現在の処理:**
 
 - イベント情報のログ出力
-- メッセージタイプ別の識別
+- テキストメッセージのエコーバック（テスト用）
 
-**今後の実装（#26）:**
+**今後の実装:**
 
-- メッセージへの返信機能
 - コマンド処理（「プラン作成」「ヘルプ」など）
 - LIFF起動メッセージの送信
 
 ---
 
+### フォローハンドラー (`handlers/follow.ts`)
+
+ユーザーがBotを友だち追加した時の処理を行います。
+
+**実装機能:**
+
+- ✅ ウェルカムメッセージ送信
+- ✅ tabijiの使い方案内
+- ✅ エラー時のログ出力
+
+**ウェルカムメッセージ内容:**
+
+- tabijiの紹介
+- 基本的な使い方（3ステップ）
+- プラン作成の誘導
+
+---
+
 ## 実装予定機能
 
-### Messaging API ラッパー (`messaging.ts`) - #26
-
-LINE Messaging APIを使用したメッセージ送信機能。
-
-**実装予定:**
-
-- テキストメッセージ送信
-- Flex Message送信
-- リプライメッセージ送信
-- プッシュメッセージ送信
-
-### Flex Message テンプレート (`flex-messages.ts`) - #26
+### Flex Message テンプレート (`flex-messages.ts`) - #59
 
 旅行プラン表示用のFlex Messageテンプレート。
 
@@ -121,8 +165,48 @@ LINE Messaging APIを使用したメッセージ送信機能。
 ## 関連ファイル
 
 - **Webhookエンドポイント**: `app/api/webhook/route.ts`
-- **テスト**: `__tests__/lib/line/validate.test.ts`
+- **テスト**:
+  - `__tests__/lib/line/validate.test.ts` - 署名検証テスト
+  - `__tests__/lib/line/messaging.test.ts` - メッセージ送信テスト
+  - `__tests__/lib/line/handlers/follow.test.ts` - フォローハンドラーテスト
+  - `__tests__/app/api/webhook/route.test.ts` - Webhookエンドポイントテスト
 - **環境変数**: `LINE_CHANNEL_SECRET`, `LINE_CHANNEL_ACCESS_TOKEN`
+
+---
+
+## トラブルシューティング
+
+### メッセージ送信が失敗する
+
+**原因:**
+
+- 環境変数が未設定
+- Reply Tokenが無効（既に使用済み、または有効期限切れ）
+- ユーザーがBotをブロック中
+
+**対処法:**
+
+1. `.env.local`に`LINE_CHANNEL_ACCESS_TOKEN`と`LINE_CHANNEL_SECRET`が設定されているか確認
+2. Reply Tokenは1回のみ使用可能なため、2回目以降の送信にはPush APIを使用
+3. ユーザーブロック時（403エラー）は送信不可、ログを確認
+
+### Reply Token vs User ID
+
+| 項目     | Reply Token            | User ID                          |
+| -------- | ---------------------- | -------------------------------- |
+| 取得元   | Webhookイベント        | Webhookイベント or LIFF          |
+| 有効期限 | **1回のみ使用可能**    | 永続的                           |
+| 使用API  | Reply API              | Push API                         |
+| 用途     | イベントへの即座の応答 | 任意のタイミングでメッセージ送信 |
+
+### メッセージ送信回数の制限
+
+LINE Messaging APIには月間の無料送信回数制限があります（フリープランの場合）。
+
+- **Reply API**: 無料（無制限）
+- **Push API**: 月500通まで無料
+
+できるだけReply APIを使用し、Push APIは必要最小限に。
 
 ---
 

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { validateSignature } from '@/lib/line/validate'
+import { handleFollowEvent } from '@/lib/line/handlers/follow'
+import { handleMessageEvent } from '@/lib/line/handlers/message'
 import type { WebhookEvent } from '@line/bot-sdk'
 
 /**
@@ -62,7 +64,6 @@ export async function POST(request: NextRequest) {
  * Webhookイベントを処理
  *
  * イベントタイプに応じて適切なハンドラーに振り分けます。
- * 現在はコンソールログのみ。メッセージ送信機能は #26 で実装予定。
  *
  * @param event - LINE Webhookイベント
  */
@@ -79,17 +80,14 @@ async function handleEvent(event: WebhookEvent): Promise<void> {
       break
 
     case 'follow':
-      console.log('Follow event received:', {
-        userId: event.source.userId,
-      })
-      // フォローイベント処理（#26で実装）
+      await handleFollowEvent(event)
       break
 
     case 'unfollow':
       console.log('Unfollow event received:', {
         userId: event.source.userId,
       })
-      // アンフォローイベント処理（#26で実装）
+      // アンフォローイベント処理（将来実装）
       break
 
     case 'postback':
@@ -120,53 +118,3 @@ async function handleEvent(event: WebhookEvent): Promise<void> {
   }
 }
 
-/**
- * メッセージイベントを処理
- *
- * テキストメッセージの内容をログ出力します。
- * メッセージへの返信機能は #26 で実装予定。
- *
- * @param event - メッセージイベント
- */
-async function handleMessageEvent(event: WebhookEvent): Promise<void> {
-  if (event.type !== 'message') {
-    return
-  }
-
-  const message = event.message
-
-  // テキストメッセージの場合
-  if (message.type === 'text') {
-    console.log('Text message received:', {
-      userId: event.source.userId,
-      text: message.text,
-      messageId: message.id,
-    })
-    // メッセージ内容に応じた処理（#26で実装）
-    // 例: 「プラン作成」→ LIFF起動メッセージ送信
-  }
-
-  // 画像メッセージの場合
-  else if (message.type === 'image') {
-    console.log('Image message received:', {
-      userId: event.source.userId,
-      messageId: message.id,
-    })
-    // 画像メッセージ処理（将来実装）
-  }
-
-  // スタンプメッセージの場合
-  else if (message.type === 'sticker') {
-    console.log('Sticker message received:', {
-      userId: event.source.userId,
-      packageId: message.packageId,
-      stickerId: message.stickerId,
-    })
-    // スタンプメッセージ処理（将来実装）
-  }
-
-  // その他のメッセージタイプ
-  else {
-    console.log('Unsupported message type:', message.type)
-  }
-}
