@@ -5,21 +5,40 @@
 
 'use client'
 
-import { useState } from 'react'
 import Link from 'next/link'
+import { PlanFormProvider, usePlanForm } from '@/contexts/plan-form-context'
 
-export default function NewPlanPage() {
-  const [title, setTitle] = useState('')
-  const [startDate, setStartDate] = useState('')
-  const [endDate, setEndDate] = useState('')
+/**
+ * プラン作成フォームコンポーネント（Context内部）
+ */
+function NewPlanForm() {
+  const { formData, updateFormData, nextStep, prevStep, resetForm } = usePlanForm()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     // TODO: Server Actionでプラン作成
-    console.log('プラン作成:', { title, startDate, endDate })
+    console.log('プラン作成:', {
+      startDate: formData.startDate,
+      endDate: formData.endDate,
+      region: formData.region,
+      prefecture: formData.prefecture,
+    })
 
     alert('プラン作成機能は実装中です')
+  }
+
+  // Date → input[type="date"]用の文字列に変換
+  const formatDateForInput = (date: Date | null): string => {
+    if (!date) return ''
+    return date.toISOString().split('T')[0]
+  }
+
+  // input[type="date"]の文字列 → Dateに変換
+  const handleDateChange = (field: 'startDate' | 'endDate', value: string) => {
+    updateFormData({
+      [field]: value ? new Date(value) : null,
+    })
   }
 
   return (
@@ -33,27 +52,14 @@ export default function NewPlanPage() {
           <p className="text-sm text-gray-600">
             旅行プランの基本情報を入力してください
           </p>
+          {/* デバッグ情報 */}
+          <p className="text-xs text-gray-400 mt-2">
+            現在のステップ: {formData.currentStep} / 5
+          </p>
         </div>
 
         {/* フォーム */}
         <form onSubmit={handleSubmit} className="space-y-6">
-          {/* プラン名 */}
-          <div className="bg-white rounded-lg shadow p-6">
-            <label className="block mb-2">
-              <span className="text-sm font-semibold text-gray-700">
-                プラン名 <span className="text-red-500">*</span>
-              </span>
-              <input
-                type="text"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-                placeholder="例: 京都旅行 2025春"
-                required
-                className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-              />
-            </label>
-          </div>
-
           {/* 日程 */}
           <div className="bg-white rounded-lg shadow p-6 space-y-4">
             <h3 className="text-sm font-semibold text-gray-700 mb-3">
@@ -64,8 +70,8 @@ export default function NewPlanPage() {
               <span className="text-sm text-gray-600">出発日</span>
               <input
                 type="date"
-                value={startDate}
-                onChange={(e) => setStartDate(e.target.value)}
+                value={formatDateForInput(formData.startDate)}
+                onChange={(e) => handleDateChange('startDate', e.target.value)}
                 required
                 className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
@@ -75,12 +81,42 @@ export default function NewPlanPage() {
               <span className="text-sm text-gray-600">帰着日</span>
               <input
                 type="date"
-                value={endDate}
-                onChange={(e) => setEndDate(e.target.value)}
+                value={formatDateForInput(formData.endDate)}
+                onChange={(e) => handleDateChange('endDate', e.target.value)}
                 required
                 className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </label>
+          </div>
+
+          {/* デバッグ用ステップ操作ボタン */}
+          <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+            <p className="text-xs font-semibold text-yellow-800 mb-2">
+              デバッグ用コントロール
+            </p>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={prevStep}
+                className="px-3 py-1 text-sm bg-gray-200 text-gray-700 rounded hover:bg-gray-300"
+              >
+                ← 前のステップ
+              </button>
+              <button
+                type="button"
+                onClick={nextStep}
+                className="px-3 py-1 text-sm bg-blue-200 text-blue-700 rounded hover:bg-blue-300"
+              >
+                次のステップ →
+              </button>
+              <button
+                type="button"
+                onClick={resetForm}
+                className="px-3 py-1 text-sm bg-red-200 text-red-700 rounded hover:bg-red-300"
+              >
+                リセット
+              </button>
+            </div>
           </div>
 
           {/* アクションボタン */}
@@ -89,7 +125,7 @@ export default function NewPlanPage() {
               type="submit"
               className="w-full px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-semibold"
             >
-              プランを作成
+              プランを作成（開発中）
             </button>
 
             <Link
@@ -112,5 +148,16 @@ export default function NewPlanPage() {
         </div>
       </div>
     </div>
+  )
+}
+
+/**
+ * プラン作成ページ（Context Provider付き）
+ */
+export default function NewPlanPage() {
+  return (
+    <PlanFormProvider>
+      <NewPlanForm />
+    </PlanFormProvider>
   )
 }
