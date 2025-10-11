@@ -153,3 +153,53 @@ export type PlanShareUpdate = Database['public']['Tables']['plan_shares']['Updat
  * スポット更新時の型
  */
 export type SpotUpdate = Database['public']['Tables']['spots']['Update']
+
+// ========================================
+// プラン作成フロー用の型定義
+// ========================================
+
+/**
+ * カスタムスポット（ユーザーが手動で追加するスポット）
+ */
+export interface CustomSpot {
+  /** スポット名 */
+  name: string
+  /** 緯度 */
+  lat: number
+  /** 経度 */
+  lng: number
+  /** 住所（オプション） */
+  address?: string
+  /** カテゴリ（オプション） */
+  category?: string
+}
+
+/**
+ * プラン作成フォームのデータ
+ * Context + LocalStorageで管理される状態
+ */
+export interface PlanFormData {
+  // ステップ1: 日程
+  /** 開始日 */
+  startDate: Date | null
+  /** 終了日 */
+  endDate: Date | null
+
+  // ステップ2: エリア
+  /** 地方（例: 関東） */
+  region: string | null
+  /** 都道府県（例: 東京都） */
+  prefecture: string | null
+
+  // ステップ3: スポット
+  /** 選択されたスポット（マスタから） */
+  selectedSpots: Spot[]
+  /** カスタムスポット（手動追加） */
+  customSpots: CustomSpot[]
+
+  // メタ情報
+  /** 現在のステップ（1-5） */
+  currentStep: number
+  /** プラン作成完了フラグ */
+  isComplete: boolean
+}
