@@ -40,36 +40,37 @@ describe('SpotSelectionStep', () => {
   })
 
   describe('基本表示', () => {
-    it('タイトルと説明が表示される', () => {
+    it('マップUIプレースホルダーが表示される', () => {
       render(
         <PlanFormProvider>
           <SpotSelectionStep />
         </PlanFormProvider>
       )
 
-      expect(screen.getByText('📍 スポットを選択')).toBeInTheDocument()
-      expect(screen.getByText('訪問したいスポットを選択してください')).toBeInTheDocument()
+      expect(screen.getByText('マップUI（準備中）')).toBeInTheDocument()
+      expect(screen.getByText(/Google Maps連携は別issueで実装予定/)).toBeInTheDocument()
     })
 
-    it('プレースホルダーメッセージが表示される', () => {
+    it('検索バーが表示される', () => {
       render(
         <PlanFormProvider>
           <SpotSelectionStep />
         </PlanFormProvider>
       )
 
-      expect(screen.getByText('スポット選択UIは準備中です')).toBeInTheDocument()
+      expect(screen.getByPlaceholderText('スポットを検索...')).toBeInTheDocument()
     })
 
-    it('実装予定メッセージが表示される', () => {
+    it('選択済みスポット数の表示エリアが表示される', () => {
       render(
         <PlanFormProvider>
           <SpotSelectionStep />
         </PlanFormProvider>
       )
 
+      expect(screen.getByText(/選択済みスポット:/)).toBeInTheDocument()
       expect(
-        screen.getByText(/スポット検索・地図選択UIは別issueで実装予定です/)
+        screen.getByText(/マップをタップしてスポットを追加できます（実装予定）/)
       ).toBeInTheDocument()
     })
   })
@@ -82,32 +83,8 @@ describe('SpotSelectionStep', () => {
         </PlanFormProvider>
       )
 
-      expect(screen.getByText(/選択済みスポット: 0件/)).toBeInTheDocument()
-      expect(screen.getByText(/カスタムスポット: 0件/)).toBeInTheDocument()
-    })
-
-    it('LocalStorageにスポットデータがある場合、件数が表示される', () => {
-      // 事前にスポットデータを保存
-      const savedData = {
-        startDate: null,
-        endDate: null,
-        region: null,
-        prefecture: null,
-        selectedSpots: ['spot1', 'spot2'],
-        customSpots: ['custom1'],
-        currentStep: 3,
-        isComplete: false,
-      }
-      localStorageMock.setItem('planFormData', JSON.stringify(savedData))
-
-      render(
-        <PlanFormProvider>
-          <SpotSelectionStep />
-        </PlanFormProvider>
-      )
-
-      expect(screen.getByText(/選択済みスポット: 2件/)).toBeInTheDocument()
-      expect(screen.getByText(/カスタムスポット: 1件/)).toBeInTheDocument()
+      expect(screen.getByText(/選択済みスポット:/)).toBeInTheDocument()
+      expect(screen.getByText('0')).toBeInTheDocument()
     })
   })
 })

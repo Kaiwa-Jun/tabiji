@@ -80,18 +80,24 @@ export function PlanCreationSteps() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-gray-50">
+    <div className="flex h-screen flex-col bg-gray-50">
       {/* ステップインジケーター（ヘッダー） */}
       <StepIndicator currentStep={formData.currentStep} />
 
-      {/* コンテンツエリア（スクロール可能） */}
-      <div className="flex-1 overflow-y-auto">
-        <div className="mx-auto max-w-2xl p-4">{renderStep()}</div>
+      {/* コンテンツエリア */}
+      <div className={formData.currentStep === 3 ? "flex-1 overflow-hidden" : "flex-1 overflow-y-auto"}>
+        {formData.currentStep === 3 ? (
+          // ステップ3（マップ）はパディングなしで画面いっぱいに表示、スクロールなし
+          <div className="h-full">{renderStep()}</div>
+        ) : (
+          // その他のステップは従来通りパディング付き、スクロール可能
+          <div className="mx-auto max-w-2xl p-4">{renderStep()}</div>
+        )}
       </div>
 
       {/* ナビゲーションボタン（フッター） */}
       {formData.currentStep < 5 && (
-        <div className="sticky bottom-0 border-t bg-background p-4">
+        <div className="border-t bg-background p-4">
           <div className="flex items-center gap-3">
             {/* 戻るボタン（ステップ1では非表示） */}
             {formData.currentStep > 1 && (
