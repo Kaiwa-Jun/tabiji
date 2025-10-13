@@ -16,6 +16,7 @@
     "supabase:gen-types": "supabase gen types typescript --local > types/database.ts"
   },
   "dependencies": {
+    "@hookform/resolvers": "^5.2.2",
     "@line/bot-sdk": "^10.3.0",
     "@line/liff": "^2.26.1",
     "@radix-ui/react-slot": "^1.2.3",
@@ -28,7 +29,9 @@
     "postcss": "^8.5.6",
     "react": "19.1.0",
     "react-dom": "19.1.0",
-    "tailwind-merge": "^3.3.1"
+    "react-hook-form": "^7.65.0",
+    "tailwind-merge": "^3.3.1",
+    "zod": "^4.1.12"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
