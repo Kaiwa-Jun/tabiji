@@ -34,6 +34,8 @@ export interface GoogleMapWrapperProps {
   width?: string
   /** カスタムクラス名 */
   className?: string
+  /** マップ初期化完了時のコールバック */
+  onMapReady?: (map: google.maps.Map) => void
 }
 
 /**
@@ -64,6 +66,7 @@ export function GoogleMapWrapper({
   height = '400px',
   width = '100%',
   className = '',
+  onMapReady,
 }: GoogleMapWrapperProps) {
   return (
     <div style={{ height, width }} className={className}>
@@ -73,6 +76,7 @@ export function GoogleMapWrapper({
         zoom={zoom}
         height="100%"
         width="100%"
+        onMapReady={onMapReady}
       />
     </div>
   )

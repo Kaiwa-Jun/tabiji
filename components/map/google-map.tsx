@@ -16,6 +16,8 @@ export interface GoogleMapProps {
   width?: string
   /** カスタムクラス名 */
   className?: string
+  /** マップ初期化完了時のコールバック */
+  onMapReady?: (map: google.maps.Map) => void
 }
 
 /**
@@ -39,6 +41,7 @@ export function GoogleMap({
   height = '400px',
   width = '100%',
   className = '',
+  onMapReady,
 }: GoogleMapProps) {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<google.maps.Map | null>(null)
@@ -97,6 +100,8 @@ export function GoogleMap({
         if (isMounted) {
           mapInstanceRef.current = map
           setIsLoading(false)
+          // マップ初期化完了を通知
+          onMapReady?.(map)
         }
       } catch (err) {
         if (isMounted) {
@@ -115,6 +120,8 @@ export function GoogleMap({
     return () => {
       isMounted = false
     }
+    // onMapReadyは関数なので依存配列に含めない（親で useCallback を使うべき）
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [lat, lng, zoom])
 
   // マップコンテナは常にレンダリング（ローディング/エラーはオーバーレイで表示）

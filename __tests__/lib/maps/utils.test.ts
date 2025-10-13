@@ -1,0 +1,261 @@
+/**
+ * @jest-environment jsdom
+ */
+
+import {
+  panToLocation,
+  fitBounds,
+  calculateDistance,
+  getMapCenter,
+  getMapZoom,
+} from '@/lib/maps/utils'
+
+describe('Maps Utils', () => {
+  // Google Maps APIのモック
+  beforeAll(() => {
+    const mockLatLng = jest.fn((lat: number, lng: number) => ({
+      lat: () => lat,
+      lng: () => lng,
+      toJSON: () => ({ lat, lng }),
+    }))
+
+    const mockLatLngBounds = jest.fn(() => {
+      const bounds = {
+        extend: jest.fn(),
+        contains: jest.fn(),
+      }
+      return bounds
+    })
+
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    ;(global as any).google = {
+      maps: {
+        LatLng: mockLatLng,
+        LatLngBounds: mockLatLngBounds,
+        geometry: {
+          spherical: {
+            computeDistanceBetween: jest.fn(() => 2900), // 東京駅-東京タワー間の距離（約2.9km）
+          },
+        },
+      },
+    }
+  })
+
+  afterAll(() => {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    delete (global as any).google
+  })
+
+  describe('panToLocation', () => {
+    it('地図を指定座標に移動する', () => {
+      const mockMap = {
+        panTo: jest.fn(),
+        setZoom: jest.fn(),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any
+
+      panToLocation(mockMap, 35.6812, 139.7671)
+
+      expect(mockMap.panTo).toHaveBeenCalledWith({
+        lat: 35.6812,
+        lng: 139.7671,
+      })
+      expect(mockMap.setZoom).not.toHaveBeenCalled()
+    })
+
+    it('ズームレベルを指定した場合、ズームも変更される', () => {
+      const mockMap = {
+        panTo: jest.fn(),
+        setZoom: jest.fn(),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any
+
+      panToLocation(mockMap, 35.6812, 139.7671, 15)
+
+      expect(mockMap.panTo).toHaveBeenCalledWith({
+        lat: 35.6812,
+        lng: 139.7671,
+      })
+      expect(mockMap.setZoom).toHaveBeenCalledWith(15)
+    })
+
+    it('zoom=0の場合もズームが設定される', () => {
+      const mockMap = {
+        panTo: jest.fn(),
+        setZoom: jest.fn(),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any
+
+      panToLocation(mockMap, 35.6812, 139.7671, 0)
+
+      expect(mockMap.setZoom).toHaveBeenCalledWith(0)
+    })
+  })
+
+  describe('fitBounds', () => {
+    it('空の配列の場合、警告を出して何もしない', () => {
+      const consoleWarnSpy = jest
+        .spyOn(console, 'warn')
+        .mockImplementation(() => {})
+
+      const mockMap = {
+        fitBounds: jest.fn(),
+        panTo: jest.fn(),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any
+
+      fitBounds(mockMap, [])
+
+      expect(consoleWarnSpy).toHaveBeenCalledWith(
+        '[fitBounds] No locations provided'
+      )
+      expect(mockMap.fitBounds).not.toHaveBeenCalled()
+      expect(mockMap.panTo).not.toHaveBeenCalled()
+
+      consoleWarnSpy.mockRestore()
+    })
+
+    it('1つの地点の場合、その地点にパンする', () => {
+      const mockMap = {
+        fitBounds: jest.fn(),
+        panTo: jest.fn(),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any
+
+      const locations = [{ lat: 35.6812, lng: 139.7671 }]
+
+      fitBounds(mockMap, locations)
+
+      expect(mockMap.panTo).toHaveBeenCalledWith({
+        lat: 35.6812,
+        lng: 139.7671,
+      })
+      expect(mockMap.fitBounds).not.toHaveBeenCalled()
+    })
+
+    it('複数地点の場合、全てを含む境界に合わせる', () => {
+      const mockBounds = {
+        extend: jest.fn(),
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(global as any).google.maps.LatLngBounds = jest.fn(() => mockBounds)
+
+      const mockMap = {
+        fitBounds: jest.fn(),
+        panTo: jest.fn(),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any
+
+      const locations = [
+        { lat: 35.6812, lng: 139.7671 }, // 東京駅
+        { lat: 35.6586, lng: 139.7454 }, // 東京タワー
+      ]
+
+      fitBounds(mockMap, locations)
+
+      expect(mockBounds.extend).toHaveBeenCalledTimes(2)
+      expect(mockMap.fitBounds).toHaveBeenCalledWith(mockBounds, 50)
+      expect(mockMap.panTo).not.toHaveBeenCalled()
+    })
+
+    it('カスタムパディングを指定できる', () => {
+      const mockBounds = {
+        extend: jest.fn(),
+      }
+
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      ;(global as any).google.maps.LatLngBounds = jest.fn(() => mockBounds)
+
+      const mockMap = {
+        fitBounds: jest.fn(),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any
+
+      const locations = [
+        { lat: 35.6812, lng: 139.7671 },
+        { lat: 35.6586, lng: 139.7454 },
+      ]
+
+      fitBounds(mockMap, locations, 100)
+
+      expect(mockMap.fitBounds).toHaveBeenCalledWith(mockBounds, 100)
+    })
+  })
+
+  describe('calculateDistance', () => {
+    it('2点間の距離を計算する', () => {
+      const from = { lat: 35.6812, lng: 139.7671 } // 東京駅
+      const to = { lat: 35.6586, lng: 139.7454 } // 東京タワー
+
+      const distance = calculateDistance(from, to)
+
+      expect(distance).toBe(2900)
+      expect(
+        google.maps.geometry.spherical.computeDistanceBetween
+      ).toHaveBeenCalled()
+    })
+
+    it('同じ座標間の距離は0になる', () => {
+      ;(
+        google.maps.geometry.spherical.computeDistanceBetween as jest.Mock
+      ).mockReturnValueOnce(0)
+
+      const location = { lat: 35.6812, lng: 139.7671 }
+      const distance = calculateDistance(location, location)
+
+      expect(distance).toBe(0)
+    })
+  })
+
+  describe('getMapCenter', () => {
+    it('地図の中心座標を取得する', () => {
+      const mockCenter = {
+        lat: () => 35.6812,
+        lng: () => 139.7671,
+      }
+
+      const mockMap = {
+        getCenter: jest.fn(() => mockCenter),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any
+
+      const center = getMapCenter(mockMap)
+
+      expect(center).toEqual({ lat: 35.6812, lng: 139.7671 })
+      expect(mockMap.getCenter).toHaveBeenCalled()
+    })
+
+    it('中心座標が取得できない場合はエラーをthrowする', () => {
+      const mockMap = {
+        getCenter: jest.fn(() => null),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any
+
+      expect(() => getMapCenter(mockMap)).toThrow('Failed to get map center')
+    })
+  })
+
+  describe('getMapZoom', () => {
+    it('地図のズームレベルを取得する', () => {
+      const mockMap = {
+        getZoom: jest.fn(() => 15),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any
+
+      const zoom = getMapZoom(mockMap)
+
+      expect(zoom).toBe(15)
+      expect(mockMap.getZoom).toHaveBeenCalled()
+    })
+
+    it('ズームレベルが取得できない場合はエラーをthrowする', () => {
+      const mockMap = {
+        getZoom: jest.fn(() => undefined),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      } as any
+
+      expect(() => getMapZoom(mockMap)).toThrow('Failed to get map zoom')
+    })
+  })
+})
