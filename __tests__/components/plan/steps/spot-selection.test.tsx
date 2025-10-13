@@ -40,15 +40,15 @@ describe('SpotSelectionStep', () => {
   })
 
   describe('基本表示', () => {
-    it('マップUIプレースホルダーが表示される', () => {
+    it('Google Mapコンポーネントが表示される', () => {
       render(
         <PlanFormProvider>
           <SpotSelectionStep />
         </PlanFormProvider>
       )
 
-      expect(screen.getByText('マップUI（準備中）')).toBeInTheDocument()
-      expect(screen.getByText(/Google Maps連携は別issueで実装予定/)).toBeInTheDocument()
+      // Google Mapのローディング表示を確認
+      expect(screen.getByText('地図を準備しています...')).toBeInTheDocument()
     })
 
     it('検索バーが表示される', () => {

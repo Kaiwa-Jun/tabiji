@@ -198,7 +198,11 @@ describe('PlanCreationSteps', () => {
         </PlanFormProvider>
       )
 
-      expect(screen.getByText('マップUI（準備中）')).toBeInTheDocument()
+      // Google Mapのローディング表示を確認
+      expect(screen.getByText('地図を準備しています...')).toBeInTheDocument()
+      // スポット選択UI要素を確認
+      expect(screen.getByPlaceholderText('スポットを検索...')).toBeInTheDocument()
+      expect(screen.getByText(/選択済みスポット:/)).toBeInTheDocument()
     })
 
     it('ステップ4でプレビューが表示される', () => {

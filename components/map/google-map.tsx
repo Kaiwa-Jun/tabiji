@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, useCallback } from 'react'
 import { loadGoogleMapsSafely } from '@/lib/maps/loader'
 
 export interface GoogleMapProps {
@@ -16,6 +16,8 @@ export interface GoogleMapProps {
   width?: string
   /** カスタムクラス名 */
   className?: string
+  /** マップ初期化完了時のコールバック */
+  onMapReady?: (map: google.maps.Map) => void
 }
 
 /**
@@ -39,11 +41,20 @@ export function GoogleMap({
   height = '400px',
   width = '100%',
   className = '',
+  onMapReady,
 }: GoogleMapProps) {
   const mapRef = useRef<HTMLDivElement>(null)
   const mapInstanceRef = useRef<google.maps.Map | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+
+  // onMapReadyをメモ化してメモリリークを防止
+  const stableOnMapReady = useCallback(
+    (map: google.maps.Map) => {
+      onMapReady?.(map)
+    },
+    [onMapReady]
+  )
 
   useEffect(() => {
     let isMounted = true
@@ -65,7 +76,7 @@ export function GoogleMap({
           throw new Error('Google Maps APIの読み込みに失敗しました')
         }
 
-        // 既にマップインスタンスが存在する場合は再利用
+        // 既にマップインスタンスが存在する場合は再利用して座標のみ更新
         if (mapInstanceRef.current && mapRef.current && isMounted) {
           // 中心座標を更新
           mapInstanceRef.current.setCenter({ lat, lng })
@@ -97,6 +108,8 @@ export function GoogleMap({
         if (isMounted) {
           mapInstanceRef.current = map
           setIsLoading(false)
+          // マップ初期化完了を通知
+          stableOnMapReady(map)
         }
       } catch (err) {
         if (isMounted) {
@@ -111,11 +124,21 @@ export function GoogleMap({
 
     initMap()
 
-    // クリーンアップ関数
+    // クリーンアップ関数: マップインスタンスを明示的に破棄
     return () => {
       isMounted = false
+      // Google Maps インスタンスのクリーンアップ
+      if (mapInstanceRef.current) {
+        // Google Maps API にはdestroy()メソッドがないため、
+        // 参照を削除してガベージコレクションに任せる
+        // google.maps.eventが存在する場合のみクリーンアップ
+        if (typeof google !== 'undefined' && google.maps?.event?.clearInstanceListeners) {
+          google.maps.event.clearInstanceListeners(mapInstanceRef.current)
+        }
+        mapInstanceRef.current = null
+      }
     }
-  }, [lat, lng, zoom])
+  }, [lat, lng, zoom, stableOnMapReady])
 
   // マップコンテナは常にレンダリング（ローディング/エラーはオーバーレイで表示）
   return (
