@@ -16,6 +16,7 @@
     "supabase:gen-types": "supabase gen types typescript --local > types/database.ts"
   },
   "dependencies": {
+    "@googlemaps/js-api-loader": "^2.0.1",
     "@hookform/resolvers": "^5.2.2",
     "@line/bot-sdk": "^10.3.0",
     "@line/liff": "^2.26.1",
