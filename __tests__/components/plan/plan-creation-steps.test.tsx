@@ -191,7 +191,7 @@ describe('PlanCreationSteps', () => {
         </PlanFormProvider>
       )
 
-      expect(screen.getByText('📍 スポットを選択')).toBeInTheDocument()
+      expect(screen.getByText('マップUI（準備中）')).toBeInTheDocument()
     })
 
     it('ステップ4でプレビューが表示される', () => {

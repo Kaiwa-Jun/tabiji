@@ -35,7 +35,7 @@ interface StepIndicatorProps {
  */
 export function StepIndicator({ currentStep }: StepIndicatorProps) {
   return (
-    <div className="sticky top-0 z-10 bg-background border-b">
+    <div className="bg-background border-b">
       <div className="flex items-center justify-center h-14 px-4">
         {/* ステップインジケーター */}
         <div className="flex items-center gap-1.5 overflow-x-auto scrollbar-hide">
