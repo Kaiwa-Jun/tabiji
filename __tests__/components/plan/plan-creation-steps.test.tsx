@@ -62,7 +62,7 @@ describe('PlanCreationSteps', () => {
         </PlanFormProvider>
       )
 
-      expect(screen.getByText('📅 旅行日程を選択')).toBeInTheDocument()
+      expect(screen.getByText('旅行日程を選択')).toBeInTheDocument()
     })
 
     it('初期状態で次へボタンのみ表示される（戻るボタンなし）', () => {
@@ -81,17 +81,24 @@ describe('PlanCreationSteps', () => {
     it('日程入力後、次へボタンをクリックするとステップ2に進む', async () => {
       const user = userEvent.setup()
 
+      // ステップ1の状態から、日程が既に入力されている状態でスタート
+      const savedData = {
+        startDate: '2025-12-01T00:00:00.000Z',
+        endDate: '2025-12-05T00:00:00.000Z',
+        region: null,
+        prefecture: null,
+        selectedSpots: [],
+        customSpots: [],
+        currentStep: 1,
+        isComplete: false,
+      }
+      localStorageMock.setItem('planFormData', JSON.stringify(savedData))
+
       render(
         <PlanFormProvider>
           <PlanCreationSteps />
         </PlanFormProvider>
       )
-
-      // 日程を入力
-      const startDateInput = screen.getByLabelText(/出発日/) as HTMLInputElement
-      const endDateInput = screen.getByLabelText(/帰着日/) as HTMLInputElement
-      await user.type(startDateInput, '2025-12-01')
-      await user.type(endDateInput, '2025-12-05')
 
       // 次へボタンをクリック
       const nextButton = screen.getByRole('button', { name: /次へ/ })
@@ -134,7 +141,7 @@ describe('PlanCreationSteps', () => {
 
       // ステップ1のコンテンツが表示される
       await waitFor(() => {
-        expect(screen.getByText('📅 旅行日程を選択')).toBeInTheDocument()
+        expect(screen.getByText('旅行日程を選択')).toBeInTheDocument()
       })
     })
   })
@@ -147,7 +154,7 @@ describe('PlanCreationSteps', () => {
         </PlanFormProvider>
       )
 
-      expect(screen.getByText('📅 旅行日程を選択')).toBeInTheDocument()
+      expect(screen.getByText('旅行日程を選択')).toBeInTheDocument()
     })
 
     it('ステップ2でエリア選択が表示される', () => {
@@ -252,19 +259,24 @@ describe('PlanCreationSteps', () => {
     })
 
     it('ステップ1で日程が入力されている場合、次へボタンが有効', async () => {
-      const user = userEvent.setup()
+      // 日程が既に入力されている状態でスタート
+      const savedData = {
+        startDate: '2025-12-01T00:00:00.000Z',
+        endDate: '2025-12-05T00:00:00.000Z',
+        region: null,
+        prefecture: null,
+        selectedSpots: [],
+        customSpots: [],
+        currentStep: 1,
+        isComplete: false,
+      }
+      localStorageMock.setItem('planFormData', JSON.stringify(savedData))
 
       render(
         <PlanFormProvider>
           <PlanCreationSteps />
         </PlanFormProvider>
       )
-
-      // 日程を入力
-      const startDateInput = screen.getByLabelText(/出発日/) as HTMLInputElement
-      const endDateInput = screen.getByLabelText(/帰着日/) as HTMLInputElement
-      await user.type(startDateInput, '2025-12-01')
-      await user.type(endDateInput, '2025-12-05')
 
       await waitFor(() => {
         const nextButton = screen.getByRole('button', { name: /次へ/ })

@@ -24,7 +24,9 @@ export async function registerOrUpdateUser(
     }
 
     // LINE User IDの形式チェック（Uで始まる33文字）
-    if (!profile.userId.startsWith('U') || profile.userId.length !== 33) {
+    // 開発環境のモックIDは許可
+    const isMockId = profile.userId.startsWith('mock-')
+    if (!isMockId && (!profile.userId.startsWith('U') || profile.userId.length !== 33)) {
       console.error(
         '[registerOrUpdateUser] Invalid LINE User ID format:',
         profile.userId
@@ -134,7 +136,9 @@ export async function getUserByLineId(
     }
 
     // LINE User IDの形式チェック
-    if (!lineUserId.startsWith('U') || lineUserId.length !== 33) {
+    // 開発環境のモックIDは許可
+    const isMockId = lineUserId.startsWith('mock-')
+    if (!isMockId && (!lineUserId.startsWith('U') || lineUserId.length !== 33)) {
       console.error(
         '[getUserByLineId] Invalid LINE User ID format:',
         lineUserId
