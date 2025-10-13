@@ -1,5 +1,6 @@
-@import "tailwindcss";
-@import "tw-animate-css";
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@import 'react-day-picker/style.css';
 
 @custom-variant dark (&:is(.dark *));
 
@@ -119,4 +120,56 @@
   body {
     @apply bg-background text-foreground;
   }
+}
+
+/* react-day-pickerのデフォルトスタイルをリセット */
+.rdp {
+  --rdp-accent-color: transparent;
+  --rdp-background-color: transparent;
+}
+
+.rdp-month {
+  display: block !important;
+}
+
+.rdp-month_caption {
+  display: flex !important;
+}
+
+.rdp-month_grid {
+  width: 100% !important;
+  border-collapse: collapse !important;
+}
+
+.rdp-weekdays {
+  display: flex !important;
+  width: 100% !important;
+}
+
+.rdp-weekday {
+  flex: 1 !important;
+  text-align: center !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.rdp-week {
+  display: flex !important;
+  width: 100% !important;
+}
+
+.rdp-day {
+  flex: 1 !important;
+  text-align: center !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.rdp-day_button {
+  width: 2.25rem !important;
+  height: 2.25rem !important;
+  margin: auto !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
 }

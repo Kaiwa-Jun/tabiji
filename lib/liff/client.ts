@@ -32,8 +32,19 @@ class LiffClient {
    */
   public async getProfile(): Promise<LiffUserProfile> {
     try {
+      // LIFF未初期化の場合はモックデータを返す
+      if (!this.isInitialized()) {
+        console.warn('[LIFF Mock] LIFF未初期化のためモックプロフィールを返します')
+        return {
+          userId: 'mock-user-id-12345',
+          displayName: 'テストユーザー',
+          pictureUrl: 'https://via.placeholder.com/150',
+          statusMessage: '開発環境のモックデータです',
+        }
+      }
+
       // PC開発環境ではモックデータを返す
-      if (!this.isInClient() && !liff.isLoggedIn()) {
+      if (!this.isInClient() && !this.isLoggedIn()) {
         console.warn('[LIFF Mock] モックプロフィールを返します（開発環境）')
         return {
           userId: 'mock-user-id-12345',
@@ -189,6 +200,19 @@ class LiffClient {
       return token as Record<string, unknown> | null
     } catch {
       return null
+    }
+  }
+
+  /**
+   * LIFFが初期化されているか確認
+   * @returns 初期化済みの場合true
+   */
+  public isInitialized(): boolean {
+    try {
+      // liff.isInClientなどのメソッドが存在すれば初期化済み
+      return typeof liff !== 'undefined' && typeof liff.isInClient === 'function'
+    } catch {
+      return false
     }
   }
 }

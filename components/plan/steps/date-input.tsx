@@ -1,97 +1,108 @@
 'use client'
 
+import { useState } from 'react'
+import { Calendar as CalendarIcon, Info, Clock, MapPin, Check } from 'lucide-react'
+import { ja } from 'date-fns/locale'
+import type { DateRange } from 'react-day-picker'
+
 import { usePlanForm } from '@/contexts/plan-form-context'
+import { Calendar } from '@/components/ui/calendar'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { formatDuration, formatJapaneseDate } from '@/lib/utils/date'
 
 /**
  * ステップ1: 日程入力コンポーネント
- * 旅行の開始日と終了日を入力するステップ
+ * 旅行の開始日と終了日をカレンダーUIで選択するステップ
  */
 export function DateInputStep() {
   const { formData, updateFormData } = usePlanForm()
 
-  // Date → input[type="date"]用の文字列に変換
-  const formatDateForInput = (date: Date | null): string => {
-    if (!date) return ''
-    return date.toISOString().split('T')[0]
+  // react-day-picker用の範囲選択状態
+  const [range, setRange] = useState<DateRange | undefined>({
+    from: formData.startDate || undefined,
+    to: formData.endDate || undefined,
+  })
+
+  /**
+   * カレンダーで日付範囲を選択したときの処理
+   */
+  const handleRangeSelect = (selectedRange: DateRange | undefined) => {
+    setRange(selectedRange)
+
+    if (selectedRange?.from && selectedRange?.to) {
+      updateFormData({
+        startDate: selectedRange.from,
+        endDate: selectedRange.to,
+      })
+    } else if (selectedRange?.from && !selectedRange?.to) {
+      // 開始日のみ選択された状態（終了日はまだ未選択）
+      updateFormData({
+        startDate: selectedRange.from,
+        endDate: null,
+      })
+    } else {
+      // 両方クリアされた場合
+      updateFormData({
+        startDate: null,
+        endDate: null,
+      })
+    }
   }
 
-  // input[type="date"]の文字列 → Dateに変換
-  const handleDateChange = (field: 'startDate' | 'endDate', value: string) => {
-    updateFormData({
-      [field]: value ? new Date(value) : null,
-    })
-  }
+  // 両方の日付が選択されているか
+  const hasCompleteDates = range?.from && range?.to
 
   return (
-    <div className="space-y-6">
-      {/* ヘッダー */}
-      <div>
-        <h2 className="text-xl font-bold text-gray-900">📅 旅行日程を選択</h2>
-        <p className="mt-1 text-sm text-gray-600">旅行の開始日と終了日を入力してください</p>
-      </div>
-
-      {/* 日程入力フォーム */}
-      <div className="space-y-4 rounded-lg bg-white p-6 shadow">
-        <div>
-          <label htmlFor="start-date" className="block text-sm font-medium text-gray-700">
-            出発日 <span className="text-red-500">*</span>
-          </label>
-          <input
-            id="start-date"
-            type="date"
-            value={formatDateForInput(formData.startDate)}
-            onChange={(e) => handleDateChange('startDate', e.target.value)}
-            required
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
+    <div>
+      {/* カレンダーCard */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="flex items-center gap-2 text-base">
+            <CalendarIcon className="h-5 w-5" />
+            旅行日程を選択
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="pb-4">
+          <Calendar
+            mode="range"
+            selected={range}
+            onSelect={handleRangeSelect}
+            locale={ja}
+            numberOfMonths={1}
+            className="mx-auto"
           />
-        </div>
 
-        <div>
-          <label htmlFor="end-date" className="block text-sm font-medium text-gray-700">
-            帰着日 <span className="text-red-500">*</span>
-          </label>
-          <input
-            id="end-date"
-            type="date"
-            value={formatDateForInput(formData.endDate)}
-            onChange={(e) => handleDateChange('endDate', e.target.value)}
-            min={formatDateForInput(formData.startDate)}
-            required
-            className="mt-1 block w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-          />
-        </div>
-      </div>
-
-      {/* 旅程概要 */}
-      {formData.startDate && formData.endDate && (
-        <div className="rounded-lg bg-blue-50 p-4">
-          <h3 className="text-sm font-semibold text-blue-900">旅程概要</h3>
-          <dl className="mt-2 space-y-1 text-sm">
-            <div className="flex justify-between">
-              <dt className="text-blue-700">開始日:</dt>
-              <dd className="font-medium text-blue-900">
-                {formData.startDate.toLocaleDateString('ja-JP')}
-              </dd>
+          {/* 選択結果表示エリア */}
+          {hasCompleteDates && range.from && range.to && (
+            <div className="mt-4 rounded-lg bg-green-50 p-3 dark:bg-green-950/30">
+              <div className="flex items-start gap-2">
+                <Info className="mt-0.5 h-4 w-4 text-green-600 dark:text-green-400" />
+                <div className="flex-1">
+                  <p className="text-sm font-medium text-green-900 dark:text-green-100">
+                    選択した日程
+                  </p>
+                  <div className="mt-1.5 space-y-1 text-sm text-green-700 dark:text-green-300">
+                    <div className="flex items-center gap-2">
+                      <Clock className="h-3.5 w-3.5" />
+                      <span>開始日: {formatJapaneseDate(range.from)}</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-3.5 w-3.5" />
+                      <span>終了日: {formatJapaneseDate(range.to)}</span>
+                    </div>
+                  </div>
+                  <div className="mt-2 flex items-center gap-2 rounded-md bg-green-100 px-3 py-1.5 dark:bg-green-900/50">
+                    <Check className="h-4 w-4 text-green-600 dark:text-green-400" />
+                    <span className="text-base font-bold text-green-900 dark:text-green-100">
+                      {formatDuration(range.from, range.to)}
+                    </span>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div className="flex justify-between">
-              <dt className="text-blue-700">終了日:</dt>
-              <dd className="font-medium text-blue-900">
-                {formData.endDate.toLocaleDateString('ja-JP')}
-              </dd>
-            </div>
-            <div className="flex justify-between">
-              <dt className="text-blue-700">日数:</dt>
-              <dd className="font-medium text-blue-900">
-                {Math.ceil(
-                  (formData.endDate.getTime() - formData.startDate.getTime()) /
-                    (1000 * 60 * 60 * 24)
-                ) + 1}
-                日間
-              </dd>
-            </div>
-          </dl>
-        </div>
-      )}
+          )}
+        </CardContent>
+      </Card>
     </div>
   )
 }
