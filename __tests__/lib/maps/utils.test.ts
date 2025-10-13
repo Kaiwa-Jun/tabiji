@@ -93,26 +93,18 @@ describe('Maps Utils', () => {
   })
 
   describe('fitBounds', () => {
-    it('空の配列の場合、警告を出して何もしない', () => {
-      const consoleWarnSpy = jest
-        .spyOn(console, 'warn')
-        .mockImplementation(() => {})
-
+    it('空の配列の場合、エラーをthrowする', () => {
       const mockMap = {
         fitBounds: jest.fn(),
         panTo: jest.fn(),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any
 
-      fitBounds(mockMap, [])
-
-      expect(consoleWarnSpy).toHaveBeenCalledWith(
+      expect(() => fitBounds(mockMap, [])).toThrow(
         '[fitBounds] No locations provided'
       )
       expect(mockMap.fitBounds).not.toHaveBeenCalled()
       expect(mockMap.panTo).not.toHaveBeenCalled()
-
-      consoleWarnSpy.mockRestore()
     })
 
     it('1つの地点の場合、その地点にパンする', () => {

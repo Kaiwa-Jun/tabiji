@@ -53,8 +53,7 @@ export function fitBounds(
   padding: number = 50
 ): void {
   if (locations.length === 0) {
-    console.warn('[fitBounds] No locations provided')
-    return
+    throw new Error('[fitBounds] No locations provided')
   }
 
   // 1つの地点のみの場合は、その地点にパンする
