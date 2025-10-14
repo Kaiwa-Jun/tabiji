@@ -8,6 +8,7 @@ import {
   calculateDistance,
   getMapCenter,
   getMapZoom,
+  calculateCenter,
 } from '@/lib/maps/utils'
 
 describe('Maps Utils', () => {
@@ -248,6 +249,46 @@ describe('Maps Utils', () => {
       } as any
 
       expect(() => getMapZoom(mockMap)).toThrow('Failed to get map zoom')
+    })
+  })
+
+  describe('calculateCenter', () => {
+    it('複数地点の中心座標を計算する', () => {
+      const locations = [
+        { lat: 35.6812, lng: 139.7671 }, // 東京駅
+        { lat: 35.6586, lng: 139.7454 }, // 東京タワー
+        { lat: 35.7101, lng: 139.8107 }, // スカイツリー
+      ]
+
+      const center = calculateCenter(locations)
+
+      expect(center.lat).toBeCloseTo(35.6833, 4)
+      expect(center.lng).toBeCloseTo(139.7744, 4)
+    })
+
+    it('1つの地点の場合、その座標を返す', () => {
+      const locations = [{ lat: 35.6812, lng: 139.7671 }]
+
+      const center = calculateCenter(locations)
+
+      expect(center).toEqual({ lat: 35.6812, lng: 139.7671 })
+    })
+
+    it('空の配列の場合、原点座標を返す', () => {
+      const center = calculateCenter([])
+
+      expect(center).toEqual({ lat: 0, lng: 0 })
+    })
+
+    it('2つの地点の中点を正しく計算する', () => {
+      const locations = [
+        { lat: 35.0, lng: 139.0 },
+        { lat: 36.0, lng: 140.0 },
+      ]
+
+      const center = calculateCenter(locations)
+
+      expect(center).toEqual({ lat: 35.5, lng: 139.5 })
     })
   })
 })
