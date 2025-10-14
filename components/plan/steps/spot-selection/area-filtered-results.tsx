@@ -3,27 +3,29 @@
 import { Loader2, MapPin } from 'lucide-react'
 import type { PlaceResult } from '@/lib/maps/places'
 
-interface SearchResultsProps {
+interface AreaFilteredResultsProps {
   results: PlaceResult[]
   isLoading: boolean
+  prefecture: string
   onSelectSpot?: (spot: PlaceResult) => void
 }
 
 /**
- * 検索結果コンポーネント
- * キーワード検索の結果を表示
+ * エリアフィルター結果コンポーネント
+ * 選択されたエリアの人気スポットを表示
  */
-export function SearchResults({
+export function AreaFilteredResults({
   results,
   isLoading,
+  prefecture,
   onSelectSpot,
-}: SearchResultsProps) {
+}: AreaFilteredResultsProps) {
   // ローディング状態
   if (isLoading) {
     return (
       <div className="flex flex-col items-center justify-center py-12">
         <Loader2 className="mb-3 h-8 w-8 animate-spin text-primary" />
-        <p className="text-sm text-gray-500">検索中...</p>
+        <p className="text-sm text-gray-500">読み込み中...</p>
       </div>
     )
   }
@@ -33,19 +35,19 @@ export function SearchResults({
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
         <MapPin className="mb-3 h-12 w-12 text-gray-300" />
-        <p className="text-sm text-gray-500">検索結果がありません</p>
+        <p className="text-sm text-gray-500">スポットが見つかりませんでした</p>
         <p className="mt-1 text-xs text-gray-400">
-          別のキーワードで検索してください
+          別のエリアを選択してください
         </p>
       </div>
     )
   }
 
-  // 検索結果表示
+  // 結果表示
   return (
     <div>
       <div className="mb-3 text-sm text-gray-700">
-        {results.length}件の結果
+        {prefecture}の人気スポット {results.length}件
       </div>
 
       <div className="divide-y divide-gray-200 border-y border-gray-200">
@@ -71,8 +73,8 @@ export function SearchResults({
             )}
 
             {/* スポット情報 */}
-            <div className="flex-1 min-w-0">
-              <h3 className="font-medium truncate">{spot.name}</h3>
+            <div className="min-w-0 flex-1">
+              <h3 className="truncate font-medium">{spot.name}</h3>
 
               {/* 評価 */}
               {spot.rating && (

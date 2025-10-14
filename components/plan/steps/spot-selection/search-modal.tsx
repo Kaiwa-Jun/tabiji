@@ -3,15 +3,21 @@
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useSearchModal } from '@/contexts/search-modal-context'
 import { useSearchSpots } from '@/hooks/useSearchSpots'
+import { useAreaSpots } from '@/hooks/useAreaSpots'
 import { SearchInput } from './search-input'
 import { AreaSelector } from './area-selector'
 import { RecommendedTab } from './recommended-tab'
 import { HistoryTab } from './history-tab'
 import { SearchResults } from './search-results'
+import { AreaFilteredResults } from './area-filtered-results'
 
 export function SearchModal() {
   const { isOpen, state, keyword, selectedPrefecture } = useSearchModal()
   const { results, isLoading } = useSearchSpots(keyword, selectedPrefecture)
+  const {
+    results: areaResults,
+    isLoading: areaLoading,
+  } = useAreaSpots(selectedPrefecture)
 
   if (!isOpen) return null
 
@@ -47,10 +53,12 @@ export function SearchModal() {
         )}
 
         {/* エリアフィルター: エリア別人気スポット */}
-        {state === 'area-filtered' && (
-          <p className="text-sm text-gray-500">
-            エリア別人気スポットを表示（Phase 8で実装）
-          </p>
+        {state === 'area-filtered' && selectedPrefecture && (
+          <AreaFilteredResults
+            results={areaResults}
+            isLoading={areaLoading}
+            prefecture={selectedPrefecture}
+          />
         )}
       </div>
     </div>

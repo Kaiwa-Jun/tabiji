@@ -25,3 +25,25 @@ export async function searchSpotsByKeyword(
     return []
   }
 }
+
+/**
+ * エリア別人気スポット検索
+ * @param prefecture - 都道府県名
+ * @returns 検索結果のスポット配列
+ */
+export async function searchPopularSpotsByArea(
+  prefecture: string
+): Promise<PlaceResult[]> {
+  if (!prefecture) return []
+
+  try {
+    // 「都道府県名 + 観光地」で人気スポットを検索
+    const searchQuery = `${prefecture} 観光地`
+
+    const results = await searchPlacesByArea(searchQuery, { limit: 20 })
+    return results
+  } catch (error) {
+    console.error('[searchPopularSpotsByArea] Error:', error)
+    return []
+  }
+}
