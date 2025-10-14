@@ -156,12 +156,12 @@ export function PlanFormProvider({ children }: PlanFormProviderProps) {
 
   /**
    * 次のステップに進む
-   * 最大ステップ数は5
+   * 最大ステップ数は4
    */
   const nextStep = () => {
     setFormData((prev) => ({
       ...prev,
-      currentStep: Math.min(prev.currentStep + 1, 5),
+      currentStep: Math.min(prev.currentStep + 1, 4),
     }))
   }
 

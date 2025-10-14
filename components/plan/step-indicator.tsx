@@ -13,14 +13,13 @@ interface Step {
 
 const STEPS: Step[] = [
   { number: 1, label: '日程' },
-  { number: 2, label: 'エリア' },
-  { number: 3, label: 'スポット' },
-  { number: 4, label: 'プレビュー' },
-  { number: 5, label: '完了' },
+  { number: 2, label: 'スポット' },
+  { number: 3, label: 'プレビュー' },
+  { number: 4, label: '完了' },
 ]
 
 interface StepIndicatorProps {
-  /** 現在のステップ（1-5） */
+  /** 現在のステップ（1-4） */
   currentStep: number
 }
 
