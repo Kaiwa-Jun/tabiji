@@ -2,6 +2,7 @@
 
 import { createContext, useContext, useState, ReactNode } from 'react'
 import type { PlaceResult } from '@/lib/maps/places'
+import type { Region } from '@/lib/constants/areas'
 
 type SearchModalState = 'initial' | 'searching' | 'area-filtered'
 
@@ -9,13 +10,15 @@ interface SearchModalContextValue {
   isOpen: boolean
   state: SearchModalState
   keyword: string
-  selectedArea: string | null
+  selectedRegion: Region | null
+  selectedPrefecture: string | null
   searchResults: PlaceResult[]
   popularSpots: PlaceResult[]
   openModal: () => void
   closeModal: () => void
   setKeyword: (keyword: string) => void
-  setSelectedArea: (area: string | null) => void
+  setSelectedRegion: (region: Region | null) => void
+  setSelectedPrefecture: (prefecture: string | null) => void
   setSearchResults: (results: PlaceResult[]) => void
   setPopularSpots: (spots: PlaceResult[]) => void
 }
@@ -25,14 +28,15 @@ const SearchModalContext = createContext<SearchModalContextValue | undefined>(un
 export function SearchModalProvider({ children }: { children: ReactNode }) {
   const [isOpen, setIsOpen] = useState(false)
   const [keyword, setKeyword] = useState('')
-  const [selectedArea, setSelectedArea] = useState<string | null>(null)
+  const [selectedRegion, setSelectedRegion] = useState<Region | null>(null)
+  const [selectedPrefecture, setSelectedPrefecture] = useState<string | null>(null)
   const [searchResults, setSearchResults] = useState<PlaceResult[]>([])
   const [popularSpots, setPopularSpots] = useState<PlaceResult[]>([])
 
   // 状態を自動計算
   const state: SearchModalState = keyword
     ? 'searching'
-    : selectedArea
+    : selectedRegion || selectedPrefecture
       ? 'area-filtered'
       : 'initial'
 
@@ -42,13 +46,15 @@ export function SearchModalProvider({ children }: { children: ReactNode }) {
         isOpen,
         state,
         keyword,
-        selectedArea,
+        selectedRegion,
+        selectedPrefecture,
         searchResults,
         popularSpots,
         openModal: () => setIsOpen(true),
         closeModal: () => setIsOpen(false),
         setKeyword,
-        setSelectedArea,
+        setSelectedRegion,
+        setSelectedPrefecture,
         setSearchResults,
         setPopularSpots,
       }}

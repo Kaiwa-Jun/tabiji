@@ -21,7 +21,7 @@ export function SearchInput() {
   }, [isOpen])
 
   return (
-    <div className="relative h-12 w-full rounded-lg border border-gray-300 bg-white shadow-lg">
+    <div className="relative h-12 w-full rounded-lg border border-gray-300 bg-white">
       {/* 戻るボタン（検索バー内部左端） */}
       <button
         onClick={closeModal}
