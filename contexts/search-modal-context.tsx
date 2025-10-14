@@ -15,6 +15,7 @@ interface SearchModalContextValue {
   searchResults: PlaceResult[]
   popularSpots: PlaceResult[]
   selectedSpot: PlaceResult | null
+  selectedSpots: PlaceResult[]
   openModal: () => void
   closeModal: () => void
   setKeyword: (keyword: string) => void
@@ -35,6 +36,7 @@ export function SearchModalProvider({ children }: { children: ReactNode }) {
   const [searchResults, setSearchResults] = useState<PlaceResult[]>([])
   const [popularSpots, setPopularSpots] = useState<PlaceResult[]>([])
   const [selectedSpot, setSelectedSpot] = useState<PlaceResult | null>(null)
+  const [selectedSpots, setSelectedSpots] = useState<PlaceResult[]>([])
 
   // 状態を自動計算
   const state: SearchModalState = keyword
@@ -45,6 +47,13 @@ export function SearchModalProvider({ children }: { children: ReactNode }) {
 
   const selectSpot = (spot: PlaceResult) => {
     setSelectedSpot(spot)
+    // 重複チェックして配列に追加
+    setSelectedSpots((prev) => {
+      if (prev.some((s) => s.placeId === spot.placeId)) {
+        return prev
+      }
+      return [...prev, spot]
+    })
     setIsOpen(false)
   }
 
@@ -59,6 +68,7 @@ export function SearchModalProvider({ children }: { children: ReactNode }) {
         searchResults,
         popularSpots,
         selectedSpot,
+        selectedSpots,
         openModal: () => setIsOpen(true),
         closeModal: () => setIsOpen(false),
         setKeyword,

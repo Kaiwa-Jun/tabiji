@@ -1,28 +1,18 @@
 'use client'
 
-import { useState, useEffect } from 'react'
 import { GoogleMapWrapper } from '@/components/map/google-map-wrapper'
 import { JAPAN_CENTER, JAPAN_ZOOM } from '@/lib/maps/constants'
 import { MapPin } from 'lucide-react'
 import { SearchModalProvider, useSearchModal } from '@/contexts/search-modal-context'
 import { SearchBarTrigger } from './spot-selection/search-bar-trigger'
 import { SearchModal } from './spot-selection/search-modal'
-import type { PlaceResult } from '@/lib/maps/places'
 
 /**
  * ステップ3: スポット選択コンポーネント（内部実装）
  * useSearchModalフックを使用するため、Provider内部に配置
  */
 function SpotSelectionContent() {
-  const { openModal, selectedSpot } = useSearchModal()
-  const [selectedSpots, setSelectedSpots] = useState<PlaceResult[]>([])
-
-  // スポットが選択されたら配列に追加
-  useEffect(() => {
-    if (selectedSpot && !selectedSpots.some((s) => s.placeId === selectedSpot.placeId)) {
-      setSelectedSpots((prev) => [...prev, selectedSpot])
-    }
-  }, [selectedSpot, selectedSpots])
+  const { openModal, selectedSpots } = useSearchModal()
 
   return (
     <div className="relative h-full w-full">
