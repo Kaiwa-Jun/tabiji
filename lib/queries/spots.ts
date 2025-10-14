@@ -47,3 +47,50 @@ export async function searchPopularSpotsByArea(
     return []
   }
 }
+
+/**
+ * おすすめスポット検索（ハイブリッドアプローチ）
+ * 選択済みスポットがない場合: 日本の人気観光地
+ * 選択済みスポットがある場合: 最後に選択したスポットと同じエリアの人気スポット
+ * @param selectedSpots - 選択済みスポット配列
+ * @returns 検索結果のスポット配列
+ */
+export async function searchRecommendedSpots(
+  selectedSpots: PlaceResult[]
+): Promise<PlaceResult[]> {
+  try {
+    if (selectedSpots.length === 0) {
+      // 初回: 日本の人気観光地を取得
+      const results = await searchPlacesByArea('日本 観光地', { limit: 20 })
+      return results
+    } else {
+      // 2回目以降: 最後に選択したスポットの都道府県から推薦
+      const lastSpot = selectedSpots[selectedSpots.length - 1]
+      const prefecture = extractPrefectureFromAddress(lastSpot.address)
+
+      if (prefecture) {
+        const results = await searchPopularSpotsByArea(prefecture)
+        return results
+      } else {
+        // 都道府県を抽出できない場合は日本全体から
+        const results = await searchPlacesByArea('日本 観光地', { limit: 20 })
+        return results
+      }
+    }
+  } catch (error) {
+    console.error('[searchRecommendedSpots] Error:', error)
+    return []
+  }
+}
+
+/**
+ * 住所から都道府県名を抽出
+ * @param address - 住所文字列
+ * @returns 都道府県名（例: "東京都", "京都府"）
+ */
+function extractPrefectureFromAddress(address: string): string | null {
+  // 都道府県のパターンマッチング
+  const prefecturePattern = /(北海道|.+?[都道府県])/
+  const match = address.match(prefecturePattern)
+  return match ? match[1] : null
+}
