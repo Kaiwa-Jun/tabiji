@@ -14,6 +14,7 @@ interface SearchModalContextValue {
   selectedPrefecture: string | null
   searchResults: PlaceResult[]
   popularSpots: PlaceResult[]
+  selectedSpot: PlaceResult | null
   openModal: () => void
   closeModal: () => void
   setKeyword: (keyword: string) => void
@@ -21,6 +22,7 @@ interface SearchModalContextValue {
   setSelectedPrefecture: (prefecture: string | null) => void
   setSearchResults: (results: PlaceResult[]) => void
   setPopularSpots: (spots: PlaceResult[]) => void
+  selectSpot: (spot: PlaceResult) => void
 }
 
 const SearchModalContext = createContext<SearchModalContextValue | undefined>(undefined)
@@ -32,6 +34,7 @@ export function SearchModalProvider({ children }: { children: ReactNode }) {
   const [selectedPrefecture, setSelectedPrefecture] = useState<string | null>(null)
   const [searchResults, setSearchResults] = useState<PlaceResult[]>([])
   const [popularSpots, setPopularSpots] = useState<PlaceResult[]>([])
+  const [selectedSpot, setSelectedSpot] = useState<PlaceResult | null>(null)
 
   // 状態を自動計算
   const state: SearchModalState = keyword
@@ -39,6 +42,11 @@ export function SearchModalProvider({ children }: { children: ReactNode }) {
     : selectedRegion || selectedPrefecture
       ? 'area-filtered'
       : 'initial'
+
+  const selectSpot = (spot: PlaceResult) => {
+    setSelectedSpot(spot)
+    setIsOpen(false)
+  }
 
   return (
     <SearchModalContext.Provider
@@ -50,6 +58,7 @@ export function SearchModalProvider({ children }: { children: ReactNode }) {
         selectedPrefecture,
         searchResults,
         popularSpots,
+        selectedSpot,
         openModal: () => setIsOpen(true),
         closeModal: () => setIsOpen(false),
         setKeyword,
@@ -57,6 +66,7 @@ export function SearchModalProvider({ children }: { children: ReactNode }) {
         setSelectedPrefecture,
         setSearchResults,
         setPopularSpots,
+        selectSpot,
       }}
     >
       {children}

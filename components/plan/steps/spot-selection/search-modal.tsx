@@ -12,7 +12,7 @@ import { SearchResults } from './search-results'
 import { AreaFilteredResults } from './area-filtered-results'
 
 export function SearchModal() {
-  const { isOpen, state, keyword, selectedPrefecture } = useSearchModal()
+  const { isOpen, state, keyword, selectedPrefecture, selectSpot } = useSearchModal()
   const { results, isLoading } = useSearchSpots(keyword, selectedPrefecture)
   const {
     results: areaResults,
@@ -49,7 +49,11 @@ export function SearchModal() {
 
         {/* 検索中: 検索結果表示 */}
         {state === 'searching' && (
-          <SearchResults results={results} isLoading={isLoading} />
+          <SearchResults
+            results={results}
+            isLoading={isLoading}
+            onSelectSpot={selectSpot}
+          />
         )}
 
         {/* エリアフィルター: エリア別人気スポット */}
@@ -58,6 +62,7 @@ export function SearchModal() {
             results={areaResults}
             isLoading={areaLoading}
             prefecture={selectedPrefecture}
+            onSelectSpot={selectSpot}
           />
         )}
       </div>
