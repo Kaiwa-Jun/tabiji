@@ -5,6 +5,7 @@ import { useSearchModal } from '@/contexts/search-modal-context'
 import { SearchInput } from './search-input'
 import { AreaSelector } from './area-selector'
 import { RecommendedTab } from './recommended-tab'
+import { HistoryTab } from './history-tab'
 
 export function SearchModal() {
   const { isOpen, state } = useSearchModal()
@@ -32,9 +33,7 @@ export function SearchModal() {
               <RecommendedTab />
             </TabsContent>
             <TabsContent value="history" className="mt-4">
-              <p className="text-sm text-gray-500">
-                次のPhaseで履歴タブを実装します
-              </p>
+              <HistoryTab />
             </TabsContent>
           </Tabs>
         )}
