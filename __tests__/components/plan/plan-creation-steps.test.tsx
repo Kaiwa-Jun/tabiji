@@ -201,7 +201,7 @@ describe('PlanCreationSteps', () => {
       // Google Mapのローディング表示を確認
       expect(screen.getByText('地図を準備しています...')).toBeInTheDocument()
       // スポット選択UI要素を確認
-      expect(screen.getByPlaceholderText('スポットを検索...')).toBeInTheDocument()
+      expect(screen.getByText('スポットを検索...')).toBeInTheDocument()
       expect(screen.getByText(/選択済みスポット:/)).toBeInTheDocument()
     })
 
