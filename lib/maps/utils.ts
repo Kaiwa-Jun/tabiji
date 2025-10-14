@@ -142,3 +142,41 @@ export function getMapZoom(map: google.maps.Map): number {
   }
   return zoom
 }
+
+/**
+ * 複数の地点の中心座標を計算する
+ * 地図の初期表示位置の決定や、スポット群の重心を求める際に使用
+ *
+ * @param locations - 座標の配列
+ * @returns 中心座標（空配列の場合は {lat: 0, lng: 0}）
+ *
+ * @example
+ * ```typescript
+ * const spots = [
+ *   { lat: 35.6812, lng: 139.7671 }, // 東京駅
+ *   { lat: 35.6586, lng: 139.7454 }, // 東京タワー
+ *   { lat: 35.7101, lng: 139.8107 }, // スカイツリー
+ * ]
+ * const center = calculateCenter(spots)
+ * console.log(`中心: ${center.lat}, ${center.lng}`)
+ * // 中心: 35.683299999999995, 139.77773333333334
+ * ```
+ */
+export function calculateCenter(locations: Coordinates[]): Coordinates {
+  if (locations.length === 0) {
+    return { lat: 0, lng: 0 }
+  }
+
+  const sum = locations.reduce(
+    (acc, loc) => ({
+      lat: acc.lat + loc.lat,
+      lng: acc.lng + loc.lng,
+    }),
+    { lat: 0, lng: 0 }
+  )
+
+  return {
+    lat: sum.lat / locations.length,
+    lng: sum.lng / locations.length,
+  }
+}
