@@ -35,15 +35,22 @@ export function RecommendedTab() {
     )
   }
 
+  // ヘッダー表示用: 郵便番号を除去してから都道府県を抽出
+  const getDisplayArea = () => {
+    if (selectedSpots.length === 0) {
+      return '日本の人気観光スポット'
+    }
+    const lastAddress = selectedSpots[selectedSpots.length - 1].address
+    const addressWithoutPostal = lastAddress.replace(/〒?\d{3}-?\d{4}\s*/, '')
+    const prefecture = addressWithoutPostal.match(/(北海道|.+?[都道府県])/)?.[1]
+    return `${prefecture || '近くの'}人気スポット`
+  }
+
   return (
     <div>
       <div className="mb-3 flex items-center gap-2 text-sm text-gray-700">
         <Sparkles className="h-4 w-4" />
-        <span>
-          {selectedSpots.length === 0
-            ? '日本の人気観光スポット'
-            : `${selectedSpots[selectedSpots.length - 1].address.match(/(北海道|.+?[都道府県])/)?.[1] || '近くの'}人気スポット`}
-        </span>
+        <span>{getDisplayArea()}</span>
       </div>
 
       <div className="divide-y divide-gray-200 border-y border-gray-200">
