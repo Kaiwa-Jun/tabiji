@@ -8,7 +8,15 @@ import { History } from 'lucide-react'
  */
 export function HistoryTab() {
   // TODO: LocalStorageから検索履歴を取得
-  const history: string[] = [] // 空の場合の例
+  // 仮データ: 検索履歴の例
+  const history: string[] = [
+    '浅草寺',
+    '東京スカイツリー',
+    '築地市場',
+    '上野公園',
+    '銀座',
+    '渋谷スクランブル交差点',
+  ]
 
   // 空状態の表示
   if (history.length === 0) {
