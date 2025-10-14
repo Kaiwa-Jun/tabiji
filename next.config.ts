@@ -8,6 +8,11 @@ const nextConfig: NextConfig = {
         hostname: 'profile.line-scdn.net',
         pathname: '/**',
       },
+      {
+        protocol: 'https',
+        hostname: 'maps.googleapis.com',
+        pathname: '/**',
+      },
     ],
   },
 };

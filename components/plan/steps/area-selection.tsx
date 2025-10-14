@@ -1,14 +1,60 @@
 'use client'
 
+import { useState } from 'react'
 import { usePlanForm } from '@/contexts/plan-form-context'
+import { REGIONS, getPrefectureByName, getPrefecturesByRegionName } from '@/lib/constants/areas'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { GoogleMap } from '@/components/map/google-map'
+import { MapPin } from 'lucide-react'
 
 /**
  * ステップ2: エリア選択コンポーネント
- * 旅行先の地方と都道府県を選択するステップ
- * TODO: 実際のエリア選択UIを実装（別issue）
+ * 旅行先の地方と都道府県を選択し、地図にズームするステップ
  */
 export function AreaSelectionStep() {
   const { formData, updateFormData } = usePlanForm()
+
+  // 地図の中心座標とズームレベル（日本の中心を初期値）
+  const [mapCenter, setMapCenter] = useState({ lat: 36.2048, lng: 138.2529 })
+  const [mapZoom, setMapZoom] = useState(5)
+
+  /**
+   * 地方選択時の処理
+   * - 地方を更新
+   * - 都道府県をリセット
+   */
+  const handleRegionChange = (regionName: string) => {
+    updateFormData({ region: regionName, prefecture: null })
+  }
+
+  /**
+   * 都道府県選択時の処理
+   * - 都道府県を更新
+   * - 地図を該当エリアにズーム
+   */
+  const handlePrefectureChange = (prefectureName: string) => {
+    updateFormData({ prefecture: prefectureName })
+
+    // 都道府県の座標データを取得して地図をズーム
+    const prefecture = getPrefectureByName(prefectureName)
+    if (prefecture) {
+      setMapCenter({ lat: prefecture.lat, lng: prefecture.lng })
+      setMapZoom(prefecture.zoom)
+    }
+  }
+
+  // 選択された地方の都道府県リスト（座標付き）
+  const availablePrefectures =
+    formData.region && REGIONS.includes(formData.region as (typeof REGIONS)[number])
+      ? getPrefecturesByRegionName(formData.region as (typeof REGIONS)[number])
+      : []
 
   return (
     <div className="space-y-6">
@@ -18,53 +64,71 @@ export function AreaSelectionStep() {
         <p className="mt-1 text-sm text-gray-600">旅行先の地方と都道府県を選択してください</p>
       </div>
 
-      {/* プレースホルダー */}
-      <div className="rounded-lg bg-white p-6 shadow">
-        <div className="space-y-4">
+      {/* エリア選択カード */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <MapPin className="h-5 w-5" />
+            訪問するエリア
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* 地方選択 */}
           <div>
-            <label htmlFor="region" className="block text-sm font-medium text-gray-700">
+            <label className="mb-2 block text-sm font-medium text-gray-700">
               地方 <span className="text-red-500">*</span>
             </label>
-            <select
-              id="region"
-              value={formData.region ?? ''}
-              onChange={(e) => updateFormData({ region: e.target.value || null })}
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="">選択してください</option>
-              <option value="hokkaido">北海道</option>
-              <option value="tohoku">東北</option>
-              <option value="kanto">関東</option>
-              <option value="chubu">中部</option>
-              <option value="kinki">近畿</option>
-              <option value="chugoku">中国</option>
-              <option value="shikoku">四国</option>
-              <option value="kyushu">九州</option>
-            </select>
+            <Select value={formData.region ?? ''} onValueChange={handleRegionChange}>
+              <SelectTrigger>
+                <SelectValue placeholder="地方を選択してください" />
+              </SelectTrigger>
+              <SelectContent>
+                {REGIONS.map((region) => (
+                  <SelectItem key={region} value={region}>
+                    {region}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
-          <div>
-            <label htmlFor="prefecture" className="block text-sm font-medium text-gray-700">
-              都道府県 <span className="text-red-500">*</span>
-            </label>
-            <input
-              id="prefecture"
-              type="text"
-              value={formData.prefecture ?? ''}
-              onChange={(e) => updateFormData({ prefecture: e.target.value || null })}
-              placeholder="例: 東京都"
-              className="mt-1 block w-full rounded-lg border border-gray-300 px-4 py-2 focus:border-blue-500 focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-        </div>
+          {/* 都道府県選択（地方選択後に有効化） */}
+          {formData.region && (
+            <div>
+              <label className="mb-2 block text-sm font-medium text-gray-700">
+                都道府県 <span className="text-red-500">*</span>
+              </label>
+              <Select value={formData.prefecture ?? ''} onValueChange={handlePrefectureChange}>
+                <SelectTrigger>
+                  <SelectValue placeholder="都道府県を選択してください" />
+                </SelectTrigger>
+                <SelectContent>
+                  {availablePrefectures.map((prefecture) => (
+                    <SelectItem key={prefecture.code} value={prefecture.name}>
+                      {prefecture.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+        </CardContent>
+      </Card>
 
-        {/* 実装予定メッセージ */}
-        <div className="mt-4 rounded border border-yellow-200 bg-yellow-50 p-3">
-          <p className="text-xs text-yellow-800">
-            ℹ️ 地図ベースのエリア選択UIは別issueで実装予定です
-          </p>
-        </div>
-      </div>
+      {/* 地図プレビューカード */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">エリアプレビュー</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <GoogleMap
+            lat={mapCenter.lat}
+            lng={mapCenter.lng}
+            zoom={mapZoom}
+            className="h-[300px] w-full rounded-lg"
+          />
+        </CardContent>
+      </Card>
     </div>
   )
 }

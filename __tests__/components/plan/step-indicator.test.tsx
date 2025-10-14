@@ -11,22 +11,20 @@ describe('StepIndicator', () => {
       render(<StepIndicator currentStep={1} />)
 
       expect(screen.getByText('日程')).toBeInTheDocument()
-      expect(screen.getByText('エリア')).toBeInTheDocument()
       expect(screen.getByText('スポット')).toBeInTheDocument()
       expect(screen.getByText('プレビュー')).toBeInTheDocument()
       expect(screen.getByText('完了')).toBeInTheDocument()
     })
 
-    it('5つのステップ番号が表示される', () => {
+    it('4つのステップ番号が表示される', () => {
       render(<StepIndicator currentStep={1} />)
 
       // ステップ1が数字で表示
       expect(screen.getByText('1')).toBeInTheDocument()
-      // ステップ2-5も数字で表示
+      // ステップ2-4も数字で表示
       expect(screen.getByText('2')).toBeInTheDocument()
       expect(screen.getByText('3')).toBeInTheDocument()
       expect(screen.getByText('4')).toBeInTheDocument()
-      expect(screen.getByText('5')).toBeInTheDocument()
     })
   })
 
@@ -57,15 +55,15 @@ describe('StepIndicator', () => {
       expect(checkIcons).toHaveLength(2)
     })
 
-    it('現在がステップ5の場合、ステップ1-4にチェックマークが表示される', () => {
-      const { container } = render(<StepIndicator currentStep={5} />)
+    it('現在がステップ4の場合、ステップ1-3にチェックマークが表示される', () => {
+      const { container } = render(<StepIndicator currentStep={4} />)
 
-      // SVG要素（Check アイコン）が4つ表示される
+      // SVG要素（Check アイコン）が3つ表示される
       const checkIcons = container.querySelectorAll('svg.lucide-check')
-      expect(checkIcons).toHaveLength(4)
+      expect(checkIcons).toHaveLength(3)
 
-      // ステップ5は数字で表示される
-      expect(screen.getByText('5')).toBeInTheDocument()
+      // ステップ4は数字で表示される
+      expect(screen.getByText('4')).toBeInTheDocument()
     })
 
     it('ステップ1では完了ステップがない', () => {
@@ -80,7 +78,6 @@ describe('StepIndicator', () => {
       expect(screen.getByText('2')).toBeInTheDocument()
       expect(screen.getByText('3')).toBeInTheDocument()
       expect(screen.getByText('4')).toBeInTheDocument()
-      expect(screen.getByText('5')).toBeInTheDocument()
     })
   })
 
@@ -91,7 +88,7 @@ describe('StepIndicator', () => {
       expect(screen.getByText('日程')).toBeInTheDocument()
     })
 
-    it('currentStepが5を超える場合でもレンダリングされる', () => {
+    it('currentStepが4を超える場合でもレンダリングされる', () => {
       render(<StepIndicator currentStep={10} />)
 
       expect(screen.getByText('完了')).toBeInTheDocument()

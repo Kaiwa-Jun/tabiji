@@ -49,7 +49,6 @@ describe('PlanCreationSteps', () => {
       )
 
       expect(screen.getByText('日程')).toBeInTheDocument()
-      expect(screen.getByText('エリア')).toBeInTheDocument()
       expect(screen.getByText('スポット')).toBeInTheDocument()
       expect(screen.getByText('プレビュー')).toBeInTheDocument()
       expect(screen.getByText('完了')).toBeInTheDocument()
@@ -78,7 +77,7 @@ describe('PlanCreationSteps', () => {
   })
 
   describe('ステップ遷移', () => {
-    it('日程入力後、次へボタンをクリックするとステップ2に進む', async () => {
+    it('日程入力後、次へボタンをクリックするとステップ2(スポット選択)に進む', async () => {
       const user = userEvent.setup()
 
       // ステップ1の状態から、日程が既に入力されている状態でスタート
@@ -104,16 +103,16 @@ describe('PlanCreationSteps', () => {
       const nextButton = screen.getByRole('button', { name: /次へ/ })
       await user.click(nextButton)
 
-      // ステップ2のコンテンツが表示される
+      // ステップ2(スポット選択)のコンテンツが表示される
       await waitFor(() => {
-        expect(screen.getByText('🗾 エリアを選択')).toBeInTheDocument()
+        expect(screen.getByText('スポットを検索...')).toBeInTheDocument()
       })
     })
 
     it('戻るボタンをクリックすると前のステップに戻る', async () => {
       const user = userEvent.setup()
 
-      // ステップ2の状態からスタート
+      // ステップ2(スポット選択)の状態からスタート
       const savedData = {
         startDate: '2025-12-01T00:00:00.000Z',
         endDate: '2025-12-05T00:00:00.000Z',
@@ -132,8 +131,8 @@ describe('PlanCreationSteps', () => {
         </PlanFormProvider>
       )
 
-      // ステップ2のコンテンツが表示されている
-      expect(screen.getByText('🗾 エリアを選択')).toBeInTheDocument()
+      // ステップ2(スポット選択)のコンテンツが表示されている
+      expect(screen.getByText('スポットを検索...')).toBeInTheDocument()
 
       // 戻るボタンをクリック
       const backButton = screen.getByRole('button', { name: /戻る/ })
@@ -157,12 +156,12 @@ describe('PlanCreationSteps', () => {
       expect(screen.getByText('旅行日程を選択')).toBeInTheDocument()
     })
 
-    it('ステップ2でエリア選択が表示される', () => {
+    it('ステップ2でスポット選択が表示される', () => {
       const savedData = {
         startDate: '2025-12-01T00:00:00.000Z',
         endDate: '2025-12-05T00:00:00.000Z',
-        region: null,
-        prefecture: null,
+        region: 'kanto',
+        prefecture: '東京都',
         selectedSpots: [],
         customSpots: [],
         currentStep: 2,
@@ -176,36 +175,12 @@ describe('PlanCreationSteps', () => {
         </PlanFormProvider>
       )
 
-      expect(screen.getByText('🗾 エリアを選択')).toBeInTheDocument()
-    })
-
-    it('ステップ3でスポット選択が表示される', () => {
-      const savedData = {
-        startDate: '2025-12-01T00:00:00.000Z',
-        endDate: '2025-12-05T00:00:00.000Z',
-        region: 'kanto',
-        prefecture: '東京都',
-        selectedSpots: [],
-        customSpots: [],
-        currentStep: 3,
-        isComplete: false,
-      }
-      localStorageMock.setItem('planFormData', JSON.stringify(savedData))
-
-      render(
-        <PlanFormProvider>
-          <PlanCreationSteps />
-        </PlanFormProvider>
-      )
-
-      // Google Mapのローディング表示を確認
-      expect(screen.getByText('地図を準備しています...')).toBeInTheDocument()
       // スポット選択UI要素を確認
-      expect(screen.getByPlaceholderText('スポットを検索...')).toBeInTheDocument()
+      expect(screen.getByText('スポットを検索...')).toBeInTheDocument()
       expect(screen.getByText(/選択済みスポット:/)).toBeInTheDocument()
     })
 
-    it('ステップ4でプレビューが表示される', () => {
+    it('ステップ3でプレビューが表示される', () => {
       const savedData = {
         startDate: '2025-12-01T00:00:00.000Z',
         endDate: '2025-12-05T00:00:00.000Z',
@@ -213,7 +188,7 @@ describe('PlanCreationSteps', () => {
         prefecture: '東京都',
         selectedSpots: ['spot1'],
         customSpots: [],
-        currentStep: 4,
+        currentStep: 3,
         isComplete: false,
       }
       localStorageMock.setItem('planFormData', JSON.stringify(savedData))
@@ -227,7 +202,7 @@ describe('PlanCreationSteps', () => {
       expect(screen.getByText('👀 プレビュー')).toBeInTheDocument()
     })
 
-    it('ステップ5で完了画面が表示される', () => {
+    it('ステップ4で完了画面が表示される', () => {
       const savedData = {
         startDate: '2025-12-01T00:00:00.000Z',
         endDate: '2025-12-05T00:00:00.000Z',
@@ -235,7 +210,7 @@ describe('PlanCreationSteps', () => {
         prefecture: '東京都',
         selectedSpots: ['spot1'],
         customSpots: [],
-        currentStep: 5,
+        currentStep: 4,
         isComplete: false,
       }
       localStorageMock.setItem('planFormData', JSON.stringify(savedData))
@@ -288,30 +263,7 @@ describe('PlanCreationSteps', () => {
       })
     })
 
-    it('ステップ2でエリアが未入力の場合、次へボタンが無効', () => {
-      const savedData = {
-        startDate: '2025-12-01T00:00:00.000Z',
-        endDate: '2025-12-05T00:00:00.000Z',
-        region: null,
-        prefecture: null,
-        selectedSpots: [],
-        customSpots: [],
-        currentStep: 2,
-        isComplete: false,
-      }
-      localStorageMock.setItem('planFormData', JSON.stringify(savedData))
-
-      render(
-        <PlanFormProvider>
-          <PlanCreationSteps />
-        </PlanFormProvider>
-      )
-
-      const nextButton = screen.getByRole('button', { name: /次へ/ })
-      expect(nextButton).toBeDisabled()
-    })
-
-    it('ステップ2でエリアが入力されている場合、次へボタンが有効', () => {
+    it('ステップ2でスポットが未選択の場合、次へボタンが無効', () => {
       const savedData = {
         startDate: '2025-12-01T00:00:00.000Z',
         endDate: '2025-12-05T00:00:00.000Z',
@@ -331,33 +283,10 @@ describe('PlanCreationSteps', () => {
       )
 
       const nextButton = screen.getByRole('button', { name: /次へ/ })
-      expect(nextButton).not.toBeDisabled()
-    })
-
-    it('ステップ3でスポットが未選択の場合、次へボタンが無効', () => {
-      const savedData = {
-        startDate: '2025-12-01T00:00:00.000Z',
-        endDate: '2025-12-05T00:00:00.000Z',
-        region: 'kanto',
-        prefecture: '東京都',
-        selectedSpots: [],
-        customSpots: [],
-        currentStep: 3,
-        isComplete: false,
-      }
-      localStorageMock.setItem('planFormData', JSON.stringify(savedData))
-
-      render(
-        <PlanFormProvider>
-          <PlanCreationSteps />
-        </PlanFormProvider>
-      )
-
-      const nextButton = screen.getByRole('button', { name: /次へ/ })
       expect(nextButton).toBeDisabled()
     })
 
-    it('ステップ3でスポットが選択されている場合、次へボタンが有効', () => {
+    it('ステップ2でスポットが選択されている場合、次へボタンが有効', () => {
       const savedData = {
         startDate: '2025-12-01T00:00:00.000Z',
         endDate: '2025-12-05T00:00:00.000Z',
@@ -365,7 +294,7 @@ describe('PlanCreationSteps', () => {
         prefecture: '東京都',
         selectedSpots: ['spot1'],
         customSpots: [],
-        currentStep: 3,
+        currentStep: 2,
         isComplete: false,
       }
       localStorageMock.setItem('planFormData', JSON.stringify(savedData))
@@ -380,7 +309,7 @@ describe('PlanCreationSteps', () => {
       expect(nextButton).not.toBeDisabled()
     })
 
-    it('ステップ4（プレビュー）では次へボタンが常に有効', () => {
+    it('ステップ3（プレビュー）では次へボタンが常に有効', () => {
       const savedData = {
         startDate: '2025-12-01T00:00:00.000Z',
         endDate: '2025-12-05T00:00:00.000Z',
@@ -388,7 +317,7 @@ describe('PlanCreationSteps', () => {
         prefecture: '東京都',
         selectedSpots: ['spot1'],
         customSpots: [],
-        currentStep: 4,
+        currentStep: 3,
         isComplete: false,
       }
       localStorageMock.setItem('planFormData', JSON.stringify(savedData))
@@ -405,7 +334,7 @@ describe('PlanCreationSteps', () => {
   })
 
   describe('ボタンのラベル', () => {
-    it('ステップ1-3では「次へ」と表示される', () => {
+    it('ステップ1-2では「次へ」と表示される', () => {
       render(
         <PlanFormProvider>
           <PlanCreationSteps />
@@ -415,7 +344,7 @@ describe('PlanCreationSteps', () => {
       expect(screen.getByRole('button', { name: /次へ/ })).toBeInTheDocument()
     })
 
-    it('ステップ4では「プランを保存」と表示される', () => {
+    it('ステップ3では「プランを保存」と表示される', () => {
       const savedData = {
         startDate: '2025-12-01T00:00:00.000Z',
         endDate: '2025-12-05T00:00:00.000Z',
@@ -423,7 +352,7 @@ describe('PlanCreationSteps', () => {
         prefecture: '東京都',
         selectedSpots: ['spot1'],
         customSpots: [],
-        currentStep: 4,
+        currentStep: 3,
         isComplete: false,
       }
       localStorageMock.setItem('planFormData', JSON.stringify(savedData))
@@ -437,7 +366,7 @@ describe('PlanCreationSteps', () => {
       expect(screen.getByRole('button', { name: /プランを保存/ })).toBeInTheDocument()
     })
 
-    it('ステップ5では次へボタンが表示されない', () => {
+    it('ステップ4では次へボタンが表示されない', () => {
       const savedData = {
         startDate: '2025-12-01T00:00:00.000Z',
         endDate: '2025-12-05T00:00:00.000Z',
@@ -445,7 +374,7 @@ describe('PlanCreationSteps', () => {
         prefecture: '東京都',
         selectedSpots: ['spot1'],
         customSpots: [],
-        currentStep: 5,
+        currentStep: 4,
         isComplete: false,
       }
       localStorageMock.setItem('planFormData', JSON.stringify(savedData))
@@ -477,8 +406,8 @@ describe('PlanCreationSteps', () => {
       const savedData = {
         startDate: '2025-12-01T00:00:00.000Z',
         endDate: '2025-12-05T00:00:00.000Z',
-        region: null,
-        prefecture: null,
+        region: 'kanto',
+        prefecture: '東京都',
         selectedSpots: [],
         customSpots: [],
         currentStep: 2,

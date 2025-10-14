@@ -51,14 +51,14 @@ describe('SpotSelectionStep', () => {
       expect(screen.getByText('地図を準備しています...')).toBeInTheDocument()
     })
 
-    it('検索バーが表示される', () => {
+    it('検索バートリガーが表示される', () => {
       render(
         <PlanFormProvider>
           <SpotSelectionStep />
         </PlanFormProvider>
       )
 
-      expect(screen.getByPlaceholderText('スポットを検索...')).toBeInTheDocument()
+      expect(screen.getByText('スポットを検索...')).toBeInTheDocument()
     })
 
     it('選択済みスポット数の表示エリアが表示される', () => {
@@ -69,9 +69,6 @@ describe('SpotSelectionStep', () => {
       )
 
       expect(screen.getByText(/選択済みスポット:/)).toBeInTheDocument()
-      expect(
-        screen.getByText(/マップをタップしてスポットを追加できます（実装予定）/)
-      ).toBeInTheDocument()
     })
   })
 

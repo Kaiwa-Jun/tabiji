@@ -188,7 +188,7 @@ describe('PlanFormContext', () => {
       expect(screen.getByTestId('current-step')).toHaveTextContent('1')
     })
 
-    it('ステップは5を超えない', async () => {
+    it('ステップは4を超えない', async () => {
       const user = userEvent.setup()
 
       render(
@@ -199,17 +199,16 @@ describe('PlanFormContext', () => {
 
       const nextButton = screen.getByTestId('next-step')
 
-      // ステップ5まで進む
+      // ステップ4まで進む
       await user.click(nextButton) // 2
       await user.click(nextButton) // 3
       await user.click(nextButton) // 4
-      await user.click(nextButton) // 5
 
-      expect(screen.getByTestId('current-step')).toHaveTextContent('5')
+      expect(screen.getByTestId('current-step')).toHaveTextContent('4')
 
-      // さらに次へを押しても5のまま
+      // さらに次へを押しても4のまま
       await user.click(nextButton)
-      expect(screen.getByTestId('current-step')).toHaveTextContent('5')
+      expect(screen.getByTestId('current-step')).toHaveTextContent('4')
     })
   })
 
