@@ -1,5 +1,6 @@
 import { searchPlacesByArea } from '@/lib/maps/places'
 import type { PlaceResult } from '@/lib/maps/places'
+import type { Region } from '@/lib/constants/areas'
 
 /**
  * キーワードとエリアでスポット検索
@@ -44,6 +45,28 @@ export async function searchPopularSpotsByArea(
     return results
   } catch (error) {
     console.error('[searchPopularSpotsByArea] Error:', error)
+    return []
+  }
+}
+
+/**
+ * 地域別人気スポット検索
+ * @param region - 地域名（例: "関東", "東北"）
+ * @returns 検索結果のスポット配列
+ */
+export async function searchPopularSpotsByRegion(
+  region: Region
+): Promise<PlaceResult[]> {
+  if (!region) return []
+
+  try {
+    // 「地域名 + 観光地」で人気スポットを検索
+    const searchQuery = `${region} 観光地`
+
+    const results = await searchPlacesByArea(searchQuery, { limit: 20 })
+    return results
+  } catch (error) {
+    console.error('[searchPopularSpotsByRegion] Error:', error)
     return []
   }
 }

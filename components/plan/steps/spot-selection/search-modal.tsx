@@ -12,12 +12,19 @@ import { SearchResults } from './search-results'
 import { AreaFilteredResults } from './area-filtered-results'
 
 export function SearchModal() {
-  const { isOpen, state, keyword, selectedPrefecture, selectSpot } = useSearchModal()
+  const {
+    isOpen,
+    state,
+    keyword,
+    selectedRegion,
+    selectedPrefecture,
+    selectSpot,
+  } = useSearchModal()
   const { results, isLoading } = useSearchSpots(keyword, selectedPrefecture)
   const {
     results: areaResults,
     isLoading: areaLoading,
-  } = useAreaSpots(selectedPrefecture)
+  } = useAreaSpots(selectedRegion, selectedPrefecture)
 
   if (!isOpen) return null
 
@@ -57,11 +64,11 @@ export function SearchModal() {
         )}
 
         {/* エリアフィルター: エリア別人気スポット */}
-        {state === 'area-filtered' && selectedPrefecture && (
+        {state === 'area-filtered' && (
           <AreaFilteredResults
             results={areaResults}
             isLoading={areaLoading}
-            prefecture={selectedPrefecture}
+            prefecture={selectedPrefecture || selectedRegion || ''}
             onSelectSpot={selectSpot}
           />
         )}
