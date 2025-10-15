@@ -17,8 +17,8 @@ function panToMarkerWithOffset(
   lng: number
 ): void {
   // 詳細カードの高さ（約150px）+ マージンを考慮して、ピンを画面の下側に配置
-  // 既存ピンをタップした場合は、大きなオフセットで画面下部に表示
-  const DETAIL_CARD_HEIGHT_OFFSET = 250 // ピクセル単位のオフセット
+  // 既存ピンをタップした場合は、適度なオフセットで画面下部に表示
+  const DETAIL_CARD_HEIGHT_OFFSET = 100 // ピクセル単位のオフセット
 
   // 現在の投影を取得
   const projection = map.getProjection()
@@ -46,9 +46,10 @@ function panToMarkerWithOffset(
   )
 
   // Y座標をオフセット（詳細カードの高さ分）
+  // 画面座標では Y が下方向に増加するため、下に表示するには引く
   const offsetPixelCoordinate = new google.maps.Point(
     pixelCoordinate.x,
-    pixelCoordinate.y + DETAIL_CARD_HEIGHT_OFFSET
+    pixelCoordinate.y - DETAIL_CARD_HEIGHT_OFFSET
   )
 
   // ピクセル座標を緯度経度に変換
