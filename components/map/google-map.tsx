@@ -107,15 +107,21 @@ export function GoogleMap({
           fullscreenControl: true,
           // POI（Points of Interest）のアイコンをクリック不可にする
           clickableIcons: false,
-          // マップスタイル: POIのラベルとアイコンを非表示
+          // マップスタイル: すべてのデフォルトマーカーとPOIを非表示
           styles: [
             {
+              // すべてのPOI（観光地、店舗など）を非表示
               featureType: 'poi',
-              elementType: 'labels',
               stylers: [{ visibility: 'off' }],
             },
             {
-              featureType: 'poi',
+              // ビジネスPOIを非表示
+              featureType: 'poi.business',
+              stylers: [{ visibility: 'off' }],
+            },
+            {
+              // 交通機関を非表示
+              featureType: 'transit',
               elementType: 'labels.icon',
               stylers: [{ visibility: 'off' }],
             },
