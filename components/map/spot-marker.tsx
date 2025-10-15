@@ -11,7 +11,7 @@ import type { PlaceResult } from '@/lib/maps/places'
  * @param lat - マーカーの緯度
  * @param lng - マーカーの経度
  */
-function panToMarkerWithOffset(
+export function panToMarkerWithOffset(
   map: google.maps.Map,
   lat: number,
   lng: number

@@ -6,10 +6,14 @@ import { JAPAN_CENTER, JAPAN_ZOOM } from '@/lib/maps/constants'
 import { SearchModalProvider, useSearchModal } from '@/contexts/search-modal-context'
 import { SearchBarTrigger } from './spot-selection/search-bar-trigger'
 import { SearchModal } from './spot-selection/search-modal'
-import { SelectedSpotsSheet } from '@/components/plan/selected-spots-sheet'
+import {
+  SelectedSpotsSheet,
+  type SelectedSpotsSheetRef,
+} from '@/components/plan/selected-spots-sheet'
 import {
   addSpotMarkers,
   clearMarkers,
+  panToMarkerWithOffset,
 } from '@/components/map/spot-marker'
 
 /**
@@ -21,11 +25,35 @@ function SpotSelectionContent() {
   const mapRef = useRef<google.maps.Map | null>(null)
   const markersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([])
   const detailCardsRef = useRef<HTMLElement[]>([])
+  const sheetRef = useRef<SelectedSpotsSheetRef>(null)
 
   // マップ初期化完了時のコールバック
   const handleMapReady = useCallback((map: google.maps.Map) => {
     mapRef.current = map
   }, [])
+
+  // スポットカードのスクロール時に対応するピンを中央に表示
+  const handleSpotChange = useCallback(
+    (index: number) => {
+      if (!mapRef.current || !selectedSpots[index]) return
+
+      const spot = selectedSpots[index]
+
+      // マップを対応するスポットの位置にスムーズに移動
+      panToMarkerWithOffset(mapRef.current, spot.lat, spot.lng)
+
+      // 対応する詳細カードを表示
+      if (detailCardsRef.current[index]) {
+        // 他のすべての詳細カードを閉じる
+        detailCardsRef.current.forEach((card) => {
+          card.style.display = 'none'
+        })
+        // このカードを表示
+        detailCardsRef.current[index].style.display = 'block'
+      }
+    },
+    [selectedSpots]
+  )
 
   // 選択されたスポットをカスタムデザインのマーカーとして表示
   useEffect(() => {
@@ -41,8 +69,11 @@ function SpotSelectionContent() {
       mapRef.current,
       selectedSpots,
       (spot) => {
-        // マーカークリック時の処理（将来的な拡張用）
-        console.log('Marker clicked:', spot.name)
+        // マーカークリック時: 対応するスポットカードを中央にスクロール
+        const spotIndex = selectedSpots.findIndex((s) => s.placeId === spot.placeId)
+        if (spotIndex !== -1) {
+          sheetRef.current?.scrollToSpot(spotIndex)
+        }
       }
     )
 
@@ -94,7 +125,12 @@ function SpotSelectionContent() {
       <SearchModal />
 
       {/* スライドアップシート：選択済みスポット表示 */}
-      <SelectedSpotsSheet spots={selectedSpots} onRemove={removeSpot} />
+      <SelectedSpotsSheet
+        ref={sheetRef}
+        spots={selectedSpots}
+        onRemove={removeSpot}
+        onSpotChange={handleSpotChange}
+      />
     </div>
   )
 }
