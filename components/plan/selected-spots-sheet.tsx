@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react'
 import { SpotCard } from './spot-card'
 import type { PlaceResult } from '@/lib/maps/places'
 import { MapPin, ChevronUp, GripHorizontal } from 'lucide-react'
@@ -9,19 +9,59 @@ import { cn } from '@/lib/utils'
 interface SelectedSpotsSheetProps {
   spots: PlaceResult[]
   onRemove: (spot: PlaceResult) => void
+  onSpotChange?: (index: number) => void
+  onSheetStateChange?: (state: SheetState) => void
 }
 
-type SheetState = 'minimized' | 'expanded'
+export interface SelectedSpotsSheetRef {
+  scrollToSpot: (index: number) => void
+  setSheetState: (state: SheetState) => void
+}
+
+export type SheetState = 'minimized' | 'expanded'
 
 /**
  * スライドアップシート型の選択済みスポット表示
  * 2段階の表示状態を持つ（最小化・展開）
  */
-export function SelectedSpotsSheet({ spots, onRemove }: SelectedSpotsSheetProps) {
-  const [sheetState, setSheetState] = useState<SheetState>('minimized')
-  const [dragStartY, setDragStartY] = useState<number | null>(null)
-  const [currentY, setCurrentY] = useState<number | null>(null)
-  const sheetRef = useRef<HTMLDivElement>(null)
+export const SelectedSpotsSheet = forwardRef<SelectedSpotsSheetRef, SelectedSpotsSheetProps>(
+  function SelectedSpotsSheet({ spots, onRemove, onSpotChange, onSheetStateChange }, ref) {
+    const [sheetState, setSheetState] = useState<SheetState>('minimized')
+
+    // シート状態が変更されたら通知
+    useEffect(() => {
+      onSheetStateChange?.(sheetState)
+    }, [sheetState, onSheetStateChange])
+    const [dragStartY, setDragStartY] = useState<number | null>(null)
+    const [currentY, setCurrentY] = useState<number | null>(null)
+    const sheetRef = useRef<HTMLDivElement>(null)
+    const scrollContainerRef = useRef<HTMLDivElement>(null)
+
+    // 外部から呼び出せる関数を公開
+    useImperativeHandle(ref, () => ({
+      scrollToSpot: (index: number) => {
+        const container = scrollContainerRef.current
+        if (!container) return
+
+        // カード幅とギャップ
+        const cardWidth = 200
+        const gap = 12
+        const containerWidth = container.clientWidth
+        const spacerWidth = containerWidth / 2 - cardWidth / 2
+
+        // 指定されたインデックスのカードの位置を計算
+        const targetScrollLeft = spacerWidth + index * (cardWidth + gap)
+
+        // スクロール
+        container.scrollTo({
+          left: targetScrollLeft,
+          behavior: 'smooth',
+        })
+      },
+      setSheetState: (state: SheetState) => {
+        setSheetState(state)
+      },
+    }))
 
   // ドラッグ開始
   const handleDragStart = (clientY: number) => {
@@ -107,6 +147,58 @@ export function SelectedSpotsSheet({ spots, onRemove }: SelectedSpotsSheetProps)
     else setSheetState('minimized')
   }
 
+  // スクロールイベント: 中央のスポットを検知
+  useEffect(() => {
+    const container = scrollContainerRef.current
+    if (!container || spots.length === 0) return
+
+    let scrollTimeout: NodeJS.Timeout | null = null
+
+    const handleScroll = () => {
+      // スクロールアニメーション中の複数回の発火を防ぐため、
+      // スクロールが停止してから一定時間後に処理を実行
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout)
+      }
+
+      scrollTimeout = setTimeout(() => {
+        // スクロール位置（中央の位置）
+        const scrollLeft = container.scrollLeft
+        const containerWidth = container.clientWidth
+        const centerPosition = scrollLeft + containerWidth / 2
+
+        // 各カードの位置を計算して、中央に最も近いカードを見つける
+        const cardWidth = 200 // カード幅
+        const gap = 12 // gap-3 = 0.75rem = 12px
+        const spacerWidth = containerWidth / 2 - cardWidth / 2
+
+        // 中央のカードインデックスを計算
+        const cardIndex = Math.round(
+          (centerPosition - spacerWidth - cardWidth / 2) / (cardWidth + gap)
+        )
+
+        // 有効な範囲内のインデックスに制限
+        const clampedIndex = Math.max(0, Math.min(cardIndex, spots.length - 1))
+
+        // コールバックを呼び出し
+        onSpotChange?.(clampedIndex)
+      }, 150) // 150ms待機してスクロール完了を検知
+    }
+
+    // スクロールイベントリスナーを追加
+    container.addEventListener('scroll', handleScroll)
+
+    // 初期表示時も呼び出し
+    handleScroll()
+
+    return () => {
+      container.removeEventListener('scroll', handleScroll)
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout)
+      }
+    }
+  }, [spots.length, onSpotChange])
+
   // 状態に応じた高さクラス
   const heightClass = {
     minimized: 'h-16',
@@ -154,9 +246,12 @@ export function SelectedSpotsSheet({ spots, onRemove }: SelectedSpotsSheetProps)
       </div>
 
       {/* コンテンツエリア */}
-      <div className="h-full overflow-x-auto overflow-y-hidden px-4 py-3">
+      <div
+        ref={scrollContainerRef}
+        className="h-full overflow-x-auto overflow-y-hidden py-3 snap-x snap-mandatory scroll-smooth"
+      >
         {spots.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-8 text-center">
+          <div className="flex flex-col items-center justify-center py-8 text-center px-4">
             <MapPin className="mb-3 h-12 w-12 text-muted-foreground/50" />
             <p className="text-sm text-muted-foreground">
               まだスポットが選択されていません
@@ -167,14 +262,20 @@ export function SelectedSpotsSheet({ spots, onRemove }: SelectedSpotsSheetProps)
           </div>
         ) : (
           <div className="flex gap-3">
+            {/* 左側のスペーサー */}
+            <div className="w-[calc(50vw-100px)] flex-shrink-0" />
+
             {spots.map((spot) => (
-              <div key={spot.placeId} className="w-[200px] flex-shrink-0">
+              <div key={spot.placeId} className="w-[200px] flex-shrink-0 snap-center">
                 <SpotCard spot={spot} onRemove={onRemove} />
               </div>
             ))}
+
+            {/* 右側のスペーサー */}
+            <div className="w-[calc(50vw-100px)] flex-shrink-0" />
           </div>
         )}
       </div>
     </div>
   )
-}
+})
