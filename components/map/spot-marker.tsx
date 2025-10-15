@@ -96,7 +96,7 @@ function createPinElement(color: string = '#ef4444'): HTMLElement {
  */
 function createDetailCard(spot: PlaceResult): HTMLElement {
   const container = document.createElement('div')
-  container.className = 'absolute bottom-full left-1/2 -translate-x-1/2 mb-2'
+  container.className = 'absolute bottom-full left-1/2 -translate-x-1/2 mb-2 z-[9999]'
 
   // メインカード
   const card = document.createElement('div')
@@ -242,16 +242,18 @@ export function addSpotMarkers(
   const markers: google.maps.marker.AdvancedMarkerElement[] = []
   const detailCards: HTMLElement[] = []
 
-  spots.forEach((spot) => {
+  spots.forEach((spot, index) => {
     // カスタムHTML要素を作成
     const { container, detailCard } = createMarkerContent(spot, color)
 
     // Advanced Marker Elementを作成（contentにカスタムHTML要素を指定）
+    // zIndexは初期値として設定（詳細カード表示時に動的に変更）
     const marker = new google.maps.marker.AdvancedMarkerElement({
       map,
       position: { lat: spot.lat, lng: spot.lng },
       content: container,
       title: spot.name,
+      zIndex: 1, // 初期値
     })
 
     // ピンクリック時の処理: コールバックのみ実行

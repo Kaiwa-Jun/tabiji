@@ -85,6 +85,11 @@ function SpotSelectionContent() {
             card.style.display = 'none'
           })
 
+          // すべてのマーカーのzIndexをリセット
+          markersRef.current.forEach((marker) => {
+            marker.zIndex = 1
+          })
+
           // 同じピンをクリックした場合は非表示（トグル）
           if (visibleDetailCardIndexRef.current === spotIndex) {
             visibleDetailCardIndexRef.current = null
@@ -92,6 +97,8 @@ function SpotSelectionContent() {
             // 別のピンをクリックした場合は、そのピンの詳細カードを表示
             if (detailCardsRef.current[spotIndex]) {
               detailCardsRef.current[spotIndex].style.display = 'block'
+              // クリックされたマーカーのzIndexを最前面に
+              markersRef.current[spotIndex].zIndex = 9999
             }
             visibleDetailCardIndexRef.current = spotIndex
           }
@@ -173,9 +180,19 @@ function SpotSelectionContent() {
             card.style.display = 'none'
           })
 
+          // すべてのマーカーのzIndexをリセット
+          searchResultMarkersRef.current.forEach((marker) => {
+            marker.zIndex = 1
+          })
+          markersRef.current.forEach((marker) => {
+            marker.zIndex = 1
+          })
+
           // 詳細カードを表示
           if (detailCards[spotIndex]) {
             detailCards[spotIndex].style.display = 'block'
+            // クリックされたマーカーのzIndexを最前面に
+            markers[spotIndex].zIndex = 9999
           }
         }
       },
