@@ -33,9 +33,11 @@ function SpotSelectionContent() {
   const markersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([])
   const searchResultMarkersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([])
   const detailCardsRef = useRef<HTMLElement[]>([])
+  const searchResultDetailCardsRef = useRef<HTMLElement[]>([])
   const sheetRef = useRef<SelectedSpotsSheetRef>(null)
   const [sheetState, setSheetState] = useState<SheetState>('minimized')
   const visibleDetailCardIndexRef = useRef<number | null>(null)
+  const visibleSearchResultCardIndexRef = useRef<number | null>(null)
 
   // マップ初期化完了時のコールバック
   const handleMapReady = useCallback((map: google.maps.Map) => {
@@ -85,14 +87,23 @@ function SpotSelectionContent() {
             card.style.display = 'none'
           })
 
+          // 検索結果の詳細カードも閉じる
+          searchResultDetailCardsRef.current.forEach((card) => {
+            card.style.display = 'none'
+          })
+
           // すべてのマーカーのzIndexをリセット
           markersRef.current.forEach((marker) => {
+            marker.zIndex = 1
+          })
+          searchResultMarkersRef.current.forEach((marker) => {
             marker.zIndex = 1
           })
 
           // 同じピンをクリックした場合は非表示（トグル）
           if (visibleDetailCardIndexRef.current === spotIndex) {
             visibleDetailCardIndexRef.current = null
+            visibleSearchResultCardIndexRef.current = null
           } else {
             // 別のピンをクリックした場合は、そのピンの詳細カードを表示
             if (detailCardsRef.current[spotIndex]) {
@@ -101,6 +112,7 @@ function SpotSelectionContent() {
               markersRef.current[spotIndex].zIndex = 9999
             }
             visibleDetailCardIndexRef.current = spotIndex
+            visibleSearchResultCardIndexRef.current = null
           }
 
           // スポットカードを中央にスクロール
@@ -171,7 +183,7 @@ function SpotSelectionContent() {
         const spotIndex = unselectedSearchResults.findIndex((s) => s.placeId === spot.placeId)
         if (spotIndex !== -1) {
           // すべての検索結果詳細カードを閉じる
-          detailCards.forEach((card) => {
+          searchResultDetailCardsRef.current.forEach((card) => {
             card.style.display = 'none'
           })
 
@@ -188,11 +200,19 @@ function SpotSelectionContent() {
             marker.zIndex = 1
           })
 
-          // 詳細カードを表示
-          if (detailCards[spotIndex]) {
-            detailCards[spotIndex].style.display = 'block'
-            // クリックされたマーカーのzIndexを最前面に
-            markers[spotIndex].zIndex = 9999
+          // 同じピンをクリックした場合は非表示（トグル）
+          if (visibleSearchResultCardIndexRef.current === spotIndex) {
+            visibleSearchResultCardIndexRef.current = null
+            visibleDetailCardIndexRef.current = null
+          } else {
+            // 別のピンをクリックした場合は、そのピンの詳細カードを表示
+            if (detailCards[spotIndex]) {
+              detailCards[spotIndex].style.display = 'block'
+              // クリックされたマーカーのzIndexを最前面に
+              markers[spotIndex].zIndex = 9999
+            }
+            visibleSearchResultCardIndexRef.current = spotIndex
+            visibleDetailCardIndexRef.current = null
           }
         }
       },
@@ -200,11 +220,13 @@ function SpotSelectionContent() {
     )
 
     searchResultMarkersRef.current = markers
+    searchResultDetailCardsRef.current = detailCards
 
     // クリーンアップ
     return () => {
       clearMarkers(searchResultMarkersRef.current)
       searchResultMarkersRef.current = []
+      searchResultDetailCardsRef.current = []
     }
   }, [searchResults, selectedSpots])
 
