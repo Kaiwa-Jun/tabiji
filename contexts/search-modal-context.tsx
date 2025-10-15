@@ -24,6 +24,7 @@ interface SearchModalContextValue {
   setSearchResults: (results: PlaceResult[]) => void
   setPopularSpots: (spots: PlaceResult[]) => void
   selectSpot: (spot: PlaceResult) => void
+  removeSpot: (spot: PlaceResult) => void
 }
 
 const SearchModalContext = createContext<SearchModalContextValue | undefined>(undefined)
@@ -57,6 +58,10 @@ export function SearchModalProvider({ children }: { children: ReactNode }) {
     setIsOpen(false)
   }
 
+  const removeSpot = (spot: PlaceResult) => {
+    setSelectedSpots((prev) => prev.filter((s) => s.placeId !== spot.placeId))
+  }
+
   return (
     <SearchModalContext.Provider
       value={{
@@ -77,6 +82,7 @@ export function SearchModalProvider({ children }: { children: ReactNode }) {
         setSearchResults,
         setPopularSpots,
         selectSpot,
+        removeSpot,
       }}
     >
       {children}

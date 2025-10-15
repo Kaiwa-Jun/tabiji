@@ -61,14 +61,14 @@ describe('SpotSelectionStep', () => {
       expect(screen.getByText('スポットを検索...')).toBeInTheDocument()
     })
 
-    it('選択済みスポット数の表示エリアが表示される', () => {
+    it('選択済みスポットのシートが表示される', () => {
       render(
         <PlanFormProvider>
           <SpotSelectionStep />
         </PlanFormProvider>
       )
 
-      expect(screen.getByText(/選択済みスポット:/)).toBeInTheDocument()
+      expect(screen.getByText('選択済みスポット')).toBeInTheDocument()
     })
   })
 
@@ -80,8 +80,8 @@ describe('SpotSelectionStep', () => {
         </PlanFormProvider>
       )
 
-      expect(screen.getByText(/選択済みスポット:/)).toBeInTheDocument()
-      expect(screen.getByText('0')).toBeInTheDocument()
+      expect(screen.getByText('選択済みスポット')).toBeInTheDocument()
+      expect(screen.getByText('0件')).toBeInTheDocument()
     })
   })
 })

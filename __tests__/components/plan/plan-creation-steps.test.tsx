@@ -177,7 +177,7 @@ describe('PlanCreationSteps', () => {
 
       // スポット選択UI要素を確認
       expect(screen.getByText('スポットを検索...')).toBeInTheDocument()
-      expect(screen.getByText(/選択済みスポット:/)).toBeInTheDocument()
+      expect(screen.getByText('選択済みスポット')).toBeInTheDocument()
     })
 
     it('ステップ3でプレビューが表示される', () => {
