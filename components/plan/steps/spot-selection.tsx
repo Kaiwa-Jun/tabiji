@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useEffect, useCallback } from 'react'
+import { useRef, useEffect, useCallback, useState } from 'react'
 import { GoogleMapWrapper } from '@/components/map/google-map-wrapper'
 import { JAPAN_CENTER, JAPAN_ZOOM } from '@/lib/maps/constants'
 import { SearchModalProvider, useSearchModal } from '@/contexts/search-modal-context'
@@ -9,6 +9,7 @@ import { SearchModal } from './spot-selection/search-modal'
 import {
   SelectedSpotsSheet,
   type SelectedSpotsSheetRef,
+  type SheetState,
 } from '@/components/plan/selected-spots-sheet'
 import {
   addSpotMarkers,
@@ -21,11 +22,12 @@ import {
  * useSearchModalフックを使用するため、Provider内部に配置
  */
 function SpotSelectionContent() {
-  const { openModal, selectedSpots, removeSpot } = useSearchModal()
+  const { openModal, selectedSpots, removeSpot, isOpen: isModalOpen } = useSearchModal()
   const mapRef = useRef<google.maps.Map | null>(null)
   const markersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([])
   const detailCardsRef = useRef<HTMLElement[]>([])
   const sheetRef = useRef<SelectedSpotsSheetRef>(null)
+  const [sheetState, setSheetState] = useState<SheetState>('minimized')
 
   // マップ初期化完了時のコールバック
   const handleMapReady = useCallback((map: google.maps.Map) => {
@@ -39,10 +41,7 @@ function SpotSelectionContent() {
 
       const spot = selectedSpots[index]
 
-      // マップを対応するスポットの位置にスムーズに移動
-      panToMarkerWithOffset(mapRef.current, spot.lat, spot.lng)
-
-      // 対応する詳細カードを表示
+      // 1. 詳細カードを即座に表示（マップ移動前）
       if (detailCardsRef.current[index]) {
         // 他のすべての詳細カードを閉じる
         detailCardsRef.current.forEach((card) => {
@@ -51,8 +50,15 @@ function SpotSelectionContent() {
         // このカードを表示
         detailCardsRef.current[index].style.display = 'block'
       }
+
+      // 2. マップを対応するスポットの位置にスムーズに移動（詳細カード表示後）
+      // シート状態に応じてオフセット値を変更
+      // expanded（展開）: 50px（シートが高いため、オフセットを小さくしてピンを上に表示）
+      // minimized（最小化）: 100px（通常のオフセット）
+      const offset = sheetState === 'expanded' ? 50 : 100
+      panToMarkerWithOffset(mapRef.current, spot.lat, spot.lng, offset)
     },
-    [selectedSpots]
+    [selectedSpots, sheetState]
   )
 
   // 選択されたスポットをカスタムデザインのマーカーとして表示
@@ -83,6 +89,7 @@ function SpotSelectionContent() {
     // 新しいスポットが追加された場合、最後に追加されたスポットにフォーカス
     if (selectedSpots.length > previousSpotsCount) {
       const latestSpot = selectedSpots[selectedSpots.length - 1]
+      const latestIndex = selectedSpots.length - 1
 
       // ズームレベルを設定（詳細が見えるレベル）
       mapRef.current.setZoom(16)
@@ -96,6 +103,12 @@ function SpotSelectionContent() {
         const lastDetailCard = detailCards[detailCards.length - 1]
         lastDetailCard.style.display = 'block'
       }
+
+      // 選択済みスポットシートを最後のスポット（一番右）にスクロール
+      // setTimeoutで少し遅延させることで、モーダルが閉じてシートが表示された後にスクロール
+      setTimeout(() => {
+        sheetRef.current?.scrollToSpot(latestIndex)
+      }, 100)
     }
 
     // クリーンアップ
@@ -124,13 +137,16 @@ function SpotSelectionContent() {
       {/* 検索モーダル */}
       <SearchModal />
 
-      {/* スライドアップシート：選択済みスポット表示 */}
-      <SelectedSpotsSheet
-        ref={sheetRef}
-        spots={selectedSpots}
-        onRemove={removeSpot}
-        onSpotChange={handleSpotChange}
-      />
+      {/* スライドアップシート：選択済みスポット表示（モーダルが閉じている時のみ表示） */}
+      {!isModalOpen && (
+        <SelectedSpotsSheet
+          ref={sheetRef}
+          spots={selectedSpots}
+          onRemove={removeSpot}
+          onSpotChange={handleSpotChange}
+          onSheetStateChange={setSheetState}
+        />
+      )}
     </div>
   )
 }

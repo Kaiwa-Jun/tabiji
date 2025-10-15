@@ -176,50 +176,18 @@ describe('spot-marker', () => {
       expect(detailCard.style.display).toBe('none')
     })
 
-    it('ピンをクリックすると詳細カードが表示される', () => {
-      addSpotMarkers(mockMap, mockSpots)
+    it('ピンをクリックするとonMarkerClickコールバックが呼ばれる', () => {
+      const onMarkerClick = jest.fn()
+      addSpotMarkers(mockMap, mockSpots, onMarkerClick)
 
       const content = createdMarkers[0].content as HTMLElement
-      const detailCard = content.querySelector('[class*="bottom-full"]') as HTMLElement
 
       // クリックイベントをトリガー
       content.click()
 
-      expect(detailCard.style.display).toBe('block')
-    })
-
-    it('詳細カードを再クリックすると閉じる', () => {
-      addSpotMarkers(mockMap, mockSpots)
-
-      const content = createdMarkers[0].content as HTMLElement
-      const detailCard = content.querySelector('[class*="bottom-full"]') as HTMLElement
-
-      // 1回目のクリック: 開く
-      content.click()
-      expect(detailCard.style.display).toBe('block')
-
-      // 2回目のクリック: 閉じる
-      content.click()
-      expect(detailCard.style.display).toBe('none')
-    })
-
-    it('別のマーカーをクリックすると他の詳細カードが閉じる', () => {
-      addSpotMarkers(mockMap, mockSpots)
-
-      const content1 = createdMarkers[0].content as HTMLElement
-      const content2 = createdMarkers[1].content as HTMLElement
-      const detailCard1 = content1.querySelector('[class*="bottom-full"]') as HTMLElement
-      const detailCard2 = content2.querySelector('[class*="bottom-full"]') as HTMLElement
-
-      // 1つ目のマーカーをクリック
-      content1.click()
-      expect(detailCard1.style.display).toBe('block')
-      expect(detailCard2.style.display).toBe('none')
-
-      // 2つ目のマーカーをクリック
-      content2.click()
-      expect(detailCard1.style.display).toBe('none')
-      expect(detailCard2.style.display).toBe('block')
+      // コールバックが呼ばれたことを確認
+      expect(onMarkerClick).toHaveBeenCalledTimes(1)
+      expect(onMarkerClick).toHaveBeenCalledWith(mockSpots[0])
     })
 
     it('詳細カード要素の配列を返す', () => {
@@ -244,16 +212,13 @@ describe('spot-marker', () => {
       expect(detailCards[1].style.display).toBe('block')
     })
 
-    it('ピンをクリックすると詳細カード表示と同時にマップがスムーズに移動する', () => {
+    it('コールバックなしでもピンクリックが動作する', () => {
       addSpotMarkers(mockMap, mockSpots)
 
       const content = createdMarkers[0].content as HTMLElement
 
-      // クリックイベントをトリガー
-      content.click()
-
-      // panToが呼ばれたことを確認（スムーズな移動）
-      expect(mockPanTo).toHaveBeenCalled()
+      // コールバックなしでもクリックがエラーにならないことを確認
+      expect(() => content.click()).not.toThrow()
     })
   })
 

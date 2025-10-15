@@ -10,21 +10,27 @@ interface SelectedSpotsSheetProps {
   spots: PlaceResult[]
   onRemove: (spot: PlaceResult) => void
   onSpotChange?: (index: number) => void
+  onSheetStateChange?: (state: SheetState) => void
 }
 
 export interface SelectedSpotsSheetRef {
   scrollToSpot: (index: number) => void
 }
 
-type SheetState = 'minimized' | 'expanded'
+export type SheetState = 'minimized' | 'expanded'
 
 /**
  * スライドアップシート型の選択済みスポット表示
  * 2段階の表示状態を持つ（最小化・展開）
  */
 export const SelectedSpotsSheet = forwardRef<SelectedSpotsSheetRef, SelectedSpotsSheetProps>(
-  function SelectedSpotsSheet({ spots, onRemove, onSpotChange }, ref) {
+  function SelectedSpotsSheet({ spots, onRemove, onSpotChange, onSheetStateChange }, ref) {
     const [sheetState, setSheetState] = useState<SheetState>('minimized')
+
+    // シート状態が変更されたら通知
+    useEffect(() => {
+      onSheetStateChange?.(sheetState)
+    }, [sheetState, onSheetStateChange])
     const [dragStartY, setDragStartY] = useState<number | null>(null)
     const [currentY, setCurrentY] = useState<number | null>(null)
     const sheetRef = useRef<HTMLDivElement>(null)
@@ -142,27 +148,37 @@ export const SelectedSpotsSheet = forwardRef<SelectedSpotsSheetRef, SelectedSpot
     const container = scrollContainerRef.current
     if (!container || spots.length === 0) return
 
+    let scrollTimeout: NodeJS.Timeout | null = null
+
     const handleScroll = () => {
-      // スクロール位置（中央の位置）
-      const scrollLeft = container.scrollLeft
-      const containerWidth = container.clientWidth
-      const centerPosition = scrollLeft + containerWidth / 2
+      // スクロールアニメーション中の複数回の発火を防ぐため、
+      // スクロールが停止してから一定時間後に処理を実行
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout)
+      }
 
-      // 各カードの位置を計算して、中央に最も近いカードを見つける
-      const cardWidth = 200 // カード幅
-      const gap = 12 // gap-3 = 0.75rem = 12px
-      const spacerWidth = containerWidth / 2 - cardWidth / 2
+      scrollTimeout = setTimeout(() => {
+        // スクロール位置（中央の位置）
+        const scrollLeft = container.scrollLeft
+        const containerWidth = container.clientWidth
+        const centerPosition = scrollLeft + containerWidth / 2
 
-      // 中央のカードインデックスを計算
-      const cardIndex = Math.round(
-        (centerPosition - spacerWidth - cardWidth / 2) / (cardWidth + gap)
-      )
+        // 各カードの位置を計算して、中央に最も近いカードを見つける
+        const cardWidth = 200 // カード幅
+        const gap = 12 // gap-3 = 0.75rem = 12px
+        const spacerWidth = containerWidth / 2 - cardWidth / 2
 
-      // 有効な範囲内のインデックスに制限
-      const clampedIndex = Math.max(0, Math.min(cardIndex, spots.length - 1))
+        // 中央のカードインデックスを計算
+        const cardIndex = Math.round(
+          (centerPosition - spacerWidth - cardWidth / 2) / (cardWidth + gap)
+        )
 
-      // コールバックを呼び出し
-      onSpotChange?.(clampedIndex)
+        // 有効な範囲内のインデックスに制限
+        const clampedIndex = Math.max(0, Math.min(cardIndex, spots.length - 1))
+
+        // コールバックを呼び出し
+        onSpotChange?.(clampedIndex)
+      }, 150) // 150ms待機してスクロール完了を検知
     }
 
     // スクロールイベントリスナーを追加
@@ -173,6 +189,9 @@ export const SelectedSpotsSheet = forwardRef<SelectedSpotsSheetRef, SelectedSpot
 
     return () => {
       container.removeEventListener('scroll', handleScroll)
+      if (scrollTimeout) {
+        clearTimeout(scrollTimeout)
+      }
     }
   }, [spots.length, onSpotChange])
 

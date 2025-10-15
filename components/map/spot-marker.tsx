@@ -10,15 +10,16 @@ import type { PlaceResult } from '@/lib/maps/places'
  * @param map - Google Maps インスタンス
  * @param lat - マーカーの緯度
  * @param lng - マーカーの経度
+ * @param offset - オフセット値（ピクセル単位、デフォルト: 100）
  */
 export function panToMarkerWithOffset(
   map: google.maps.Map,
   lat: number,
-  lng: number
+  lng: number,
+  offset: number = 100
 ): void {
-  // 詳細カードの高さ（約150px）+ マージンを考慮して、ピンを画面の下側に配置
-  // 既存ピンをタップした場合は、適度なオフセットで画面下部に表示
-  const DETAIL_CARD_HEIGHT_OFFSET = 100 // ピクセル単位のオフセット
+  // 詳細カードの高さ + マージンを考慮して、ピンを画面の下側に配置
+  const DETAIL_CARD_HEIGHT_OFFSET = offset
 
   // 現在の投影を取得
   const projection = map.getProjection()
@@ -246,29 +247,11 @@ export function addSpotMarkers(
       title: spot.name,
     })
 
-    // ピンクリック時の処理: 詳細カードの表示/非表示を切り替え
+    // ピンクリック時の処理: コールバックのみ実行
+    // 詳細カードの表示制御はhandleSpotChangeに委譲することで、
+    // ピンクリック→スクロール→詳細カード表示の流れを一本化し、ちらつきを防止
     container.addEventListener('click', () => {
-      const isCardVisible = detailCard.style.display !== 'none'
-
-      // 他のすべての詳細カードを閉じる
-      detailCards.forEach((card) => {
-        card.style.display = 'none'
-      })
-
-      // このカードの表示を切り替え
-      if (isCardVisible) {
-        // 既に開いている場合は閉じる
-        detailCard.style.display = 'none'
-      } else {
-        // 閉じている場合は開く
-        detailCard.style.display = 'block'
-
-        // マップをピンの位置にスムーズに移動（詳細カード表示時のみ）
-        // 詳細カードが上部に表示されるため、少し下にオフセットして中央に配置
-        panToMarkerWithOffset(map, spot.lat, spot.lng)
-      }
-
-      // コールバックがあれば実行
+      // コールバックがあれば実行（スクロール処理などを委譲）
       onMarkerClick?.(spot)
     })
 
