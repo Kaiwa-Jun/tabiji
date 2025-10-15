@@ -22,9 +22,16 @@ import {
  * useSearchModalフックを使用するため、Provider内部に配置
  */
 function SpotSelectionContent() {
-  const { openModal, selectedSpots, removeSpot, isOpen: isModalOpen } = useSearchModal()
+  const {
+    openModal,
+    selectedSpots,
+    removeSpot,
+    isOpen: isModalOpen,
+    searchResults,
+  } = useSearchModal()
   const mapRef = useRef<google.maps.Map | null>(null)
   const markersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([])
+  const searchResultMarkersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([])
   const detailCardsRef = useRef<HTMLElement[]>([])
   const sheetRef = useRef<SelectedSpotsSheetRef>(null)
   const [sheetState, setSheetState] = useState<SheetState>('minimized')
@@ -132,6 +139,57 @@ function SpotSelectionContent() {
       detailCardsRef.current = []
     }
   }, [selectedSpots])
+
+  // 検索結果スポットを青のマーカーとして表示
+  useEffect(() => {
+    if (!mapRef.current) return
+
+    // 既存の検索結果マーカーをクリア
+    clearMarkers(searchResultMarkersRef.current)
+
+    // 選択済みスポットのplaceIdリストを作成（重複表示を避けるため）
+    const selectedPlaceIds = new Set(selectedSpots.map((spot) => spot.placeId))
+
+    // 選択済みでない検索結果のみをフィルタリング
+    const unselectedSearchResults = searchResults.filter(
+      (spot) => !selectedPlaceIds.has(spot.placeId)
+    )
+
+    // 青のマーカーを追加（詳細カード表示可能、クリックで詳細表示）
+    const { markers, detailCards } = addSpotMarkers(
+      mapRef.current,
+      unselectedSearchResults,
+      (spot) => {
+        // マーカークリック時: 詳細カードの表示/非表示をトグル
+        const spotIndex = unselectedSearchResults.findIndex((s) => s.placeId === spot.placeId)
+        if (spotIndex !== -1) {
+          // すべての検索結果詳細カードを閉じる
+          detailCards.forEach((card) => {
+            card.style.display = 'none'
+          })
+
+          // 選択済みスポットの詳細カードも閉じる
+          detailCardsRef.current.forEach((card) => {
+            card.style.display = 'none'
+          })
+
+          // 詳細カードを表示
+          if (detailCards[spotIndex]) {
+            detailCards[spotIndex].style.display = 'block'
+          }
+        }
+      },
+      '#3b82f6' // 青色（Tailwind blue-500相当）
+    )
+
+    searchResultMarkersRef.current = markers
+
+    // クリーンアップ
+    return () => {
+      clearMarkers(searchResultMarkersRef.current)
+      searchResultMarkersRef.current = []
+    }
+  }, [searchResults, selectedSpots])
 
   return (
     <div className="relative h-full w-full">

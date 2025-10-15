@@ -72,13 +72,14 @@ export function panToMarkerWithOffset(
 /**
  * ピンアイコンのHTML要素を生成
  *
+ * @param color - ピンの色（デフォルト: #ef4444 赤色）
  * @returns ピンアイコンのHTML要素
  */
-function createPinElement(): HTMLElement {
+function createPinElement(color: string = '#ef4444'): HTMLElement {
   const pin = document.createElement('div')
   pin.className = 'relative flex items-center justify-center cursor-pointer'
   pin.innerHTML = `
-    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="#ef4444" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="drop-shadow-lg">
+    <svg xmlns="http://www.w3.org/2000/svg" width="40" height="40" viewBox="0 0 24 24" fill="${color}" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="drop-shadow-lg">
       <path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"></path>
       <circle cx="12" cy="10" r="3"></circle>
     </svg>
@@ -182,9 +183,13 @@ function createDetailCard(spot: PlaceResult): HTMLElement {
  * ピンアイコンと詳細カード（初期非表示）を含む
  *
  * @param spot - スポット情報
+ * @param color - ピンの色（デフォルト: #ef4444 赤色）
  * @returns マーカー用のHTML要素と詳細カードの要素
  */
-function createMarkerContent(spot: PlaceResult): {
+function createMarkerContent(
+  spot: PlaceResult,
+  color: string = '#ef4444'
+): {
   container: HTMLElement
   detailCard: HTMLElement
 } {
@@ -192,7 +197,7 @@ function createMarkerContent(spot: PlaceResult): {
   container.className = 'relative'
 
   // ピンアイコン
-  const pin = createPinElement()
+  const pin = createPinElement(color)
 
   // 詳細カード（初期非表示）
   const detailCard = createDetailCard(spot)
@@ -211,6 +216,7 @@ function createMarkerContent(spot: PlaceResult): {
  * @param map - Google Maps インスタンス
  * @param spots - 表示するスポット配列
  * @param onMarkerClick - マーカークリック時のコールバック（オプション）
+ * @param color - ピンの色（デフォルト: #ef4444 赤色）
  * @returns 作成されたマーカー配列と詳細カード要素の配列
  *
  * @example
@@ -227,7 +233,8 @@ function createMarkerContent(spot: PlaceResult): {
 export function addSpotMarkers(
   map: google.maps.Map,
   spots: PlaceResult[],
-  onMarkerClick?: (spot: PlaceResult) => void
+  onMarkerClick?: (spot: PlaceResult) => void,
+  color: string = '#ef4444'
 ): {
   markers: google.maps.marker.AdvancedMarkerElement[]
   detailCards: HTMLElement[]
@@ -237,7 +244,7 @@ export function addSpotMarkers(
 
   spots.forEach((spot) => {
     // カスタムHTML要素を作成
-    const { container, detailCard } = createMarkerContent(spot)
+    const { container, detailCard } = createMarkerContent(spot, color)
 
     // Advanced Marker Elementを作成（contentにカスタムHTML要素を指定）
     const marker = new google.maps.marker.AdvancedMarkerElement({

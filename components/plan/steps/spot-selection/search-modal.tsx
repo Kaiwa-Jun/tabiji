@@ -1,5 +1,6 @@
 'use client'
 
+import { useEffect } from 'react'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { useSearchModal } from '@/contexts/search-modal-context'
 import { useSearchSpots } from '@/hooks/useSearchSpots'
@@ -19,12 +20,24 @@ export function SearchModal() {
     selectedRegion,
     selectedPrefecture,
     selectSpot,
+    setSearchResults,
   } = useSearchModal()
   const { results, isLoading } = useSearchSpots(keyword, selectedPrefecture)
   const {
     results: areaResults,
     isLoading: areaLoading,
   } = useAreaSpots(selectedRegion, selectedPrefecture)
+
+  // 検索結果をコンテキストに設定
+  useEffect(() => {
+    if (state === 'searching' && results) {
+      setSearchResults(results)
+    } else if (state === 'area-filtered' && areaResults) {
+      setSearchResults(areaResults)
+    } else if (state === 'initial') {
+      setSearchResults([])
+    }
+  }, [state, results, areaResults, setSearchResults])
 
   if (!isOpen) return null
 
