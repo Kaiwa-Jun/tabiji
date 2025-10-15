@@ -53,6 +53,7 @@ export function initGoogleMaps(): Promise<typeof google> {
     importLibrary('maps'),
     importLibrary('places'),
     importLibrary('geometry'),
+    importLibrary('marker'), // Advanced Markers API
   ]).then(() => {
     // グローバルのgoogleオブジェクトを返す
     return google

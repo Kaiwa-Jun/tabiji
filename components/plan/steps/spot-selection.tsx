@@ -1,11 +1,16 @@
 'use client'
 
+import { useRef, useEffect, useCallback } from 'react'
 import { GoogleMapWrapper } from '@/components/map/google-map-wrapper'
 import { JAPAN_CENTER, JAPAN_ZOOM } from '@/lib/maps/constants'
 import { SearchModalProvider, useSearchModal } from '@/contexts/search-modal-context'
 import { SearchBarTrigger } from './spot-selection/search-bar-trigger'
 import { SearchModal } from './spot-selection/search-modal'
 import { SelectedSpotsSheet } from '@/components/plan/selected-spots-sheet'
+import {
+  addSpotMarkers,
+  clearMarkers,
+} from '@/components/map/spot-marker'
 
 /**
  * ステップ3: スポット選択コンポーネント（内部実装）
@@ -13,6 +18,49 @@ import { SelectedSpotsSheet } from '@/components/plan/selected-spots-sheet'
  */
 function SpotSelectionContent() {
   const { openModal, selectedSpots, removeSpot } = useSearchModal()
+  const mapRef = useRef<google.maps.Map | null>(null)
+  const markersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([])
+
+  // マップ初期化完了時のコールバック
+  const handleMapReady = useCallback((map: google.maps.Map) => {
+    mapRef.current = map
+  }, [])
+
+  // 選択されたスポットをカスタムデザインのマーカーとして表示
+  useEffect(() => {
+    if (!mapRef.current) return
+
+    const previousSpotsCount = markersRef.current.length
+
+    // 既存のマーカーをクリア
+    clearMarkers(markersRef.current)
+
+    // 新しいマーカーを追加（カスタムHTML要素を使用）
+    const markers = addSpotMarkers(
+      mapRef.current,
+      selectedSpots,
+      (spot) => {
+        // マーカークリック時の処理（将来的な拡張用）
+        console.log('Marker clicked:', spot.name)
+      }
+    )
+
+    markersRef.current = markers
+
+    // 新しいスポットが追加された場合、最後に追加されたスポットにフォーカス
+    if (selectedSpots.length > previousSpotsCount) {
+      const latestSpot = selectedSpots[selectedSpots.length - 1]
+      // マップを新しいスポットの位置に移動してズーム
+      mapRef.current.setCenter({ lat: latestSpot.lat, lng: latestSpot.lng })
+      mapRef.current.setZoom(16) // 詳細が見えるズームレベル
+    }
+
+    // クリーンアップ
+    return () => {
+      clearMarkers(markersRef.current)
+      markersRef.current = []
+    }
+  }, [selectedSpots])
 
   return (
     <div className="relative h-full w-full">
@@ -23,6 +71,7 @@ function SpotSelectionContent() {
         zoom={JAPAN_ZOOM}
         height="100%"
         width="100%"
+        onMapReady={handleMapReady}
       />
 
       {/* 検索バートリガー */}

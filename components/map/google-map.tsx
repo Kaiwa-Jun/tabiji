@@ -96,6 +96,8 @@ export function GoogleMap({
         const map = new google.maps.Map(mapRef.current, {
           center: { lat, lng },
           zoom,
+          // Advanced Markers APIを使用するためにMap IDが必要
+          mapId: process.env.NEXT_PUBLIC_GOOGLE_MAPS_MAP_ID || 'DEMO_MAP_ID',
           // マップのUIオプション
           zoomControl: true,
           mapTypeControl: false,
@@ -103,6 +105,21 @@ export function GoogleMap({
           streetViewControl: false,
           rotateControl: false,
           fullscreenControl: true,
+          // POI（Points of Interest）のアイコンをクリック不可にする
+          clickableIcons: false,
+          // マップスタイル: POIのラベルとアイコンを非表示
+          styles: [
+            {
+              featureType: 'poi',
+              elementType: 'labels',
+              stylers: [{ visibility: 'off' }],
+            },
+            {
+              featureType: 'poi',
+              elementType: 'labels.icon',
+              stylers: [{ visibility: 'off' }],
+            },
+          ],
         })
 
         if (isMounted) {

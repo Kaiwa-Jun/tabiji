@@ -61,6 +61,7 @@ describe('lib/maps/loader', () => {
       expect(importLibrary).toHaveBeenCalledWith('maps')
       expect(importLibrary).toHaveBeenCalledWith('places')
       expect(importLibrary).toHaveBeenCalledWith('geometry')
+      expect(importLibrary).toHaveBeenCalledWith('marker')
     })
 
     it('複数回呼び出しても同じPromiseを返す（重複読み込み防止）', async () => {
@@ -83,8 +84,8 @@ describe('lib/maps/loader', () => {
       const { setOptions, importLibrary } = require('@googlemaps/js-api-loader')
       // setOptionsは1回のみ呼ばれる（重複読み込み防止）
       expect(setOptions).toHaveBeenCalledTimes(1)
-      // importLibraryは3つのライブラリで各1回のみ
-      expect(importLibrary).toHaveBeenCalledTimes(3)
+      // importLibraryは4つのライブラリ（maps, places, geometry, marker）で各1回のみ
+      expect(importLibrary).toHaveBeenCalledTimes(4)
     })
 
     it('APIキーが未設定の場合はエラーを投げる', () => {

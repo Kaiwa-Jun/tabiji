@@ -1,0 +1,227 @@
+import {
+  addSpotMarkers,
+  clearMarkers,
+} from '@/components/map/spot-marker'
+import type { PlaceResult } from '@/lib/maps/places'
+
+const mockMap = {} as google.maps.Map
+
+// 作成されたマーカーインスタンスを保存する配列
+const createdMarkers: Array<{
+  map: google.maps.Map | null
+  content: HTMLElement | null
+}> = []
+
+// Google Maps APIグローバルオブジェクトのモック（Advanced Markers API対応）
+global.google = {
+  maps: {
+    marker: {
+      AdvancedMarkerElement: jest.fn((options: { content?: HTMLElement }) => {
+        const markerInstance = {
+          map: null as google.maps.Map | null,
+          content: options.content || null,
+        }
+        createdMarkers.push(markerInstance)
+        return markerInstance
+      }),
+    },
+  },
+} as unknown as typeof google
+
+describe('spot-marker', () => {
+  const mockSpots: PlaceResult[] = [
+    {
+      placeId: '1',
+      name: 'スポット1',
+      address: '東京都',
+      lat: 35.6812,
+      lng: 139.7671,
+    },
+    {
+      placeId: '2',
+      name: 'スポット2',
+      address: '大阪府',
+      lat: 34.6937,
+      lng: 135.5023,
+    },
+  ]
+
+  beforeEach(() => {
+    jest.clearAllMocks()
+    createdMarkers.length = 0 // マーカー配列をクリア
+  })
+
+  describe('addSpotMarkers', () => {
+    it('スポット数と同じ数のマーカーを作成する', () => {
+      const markers = addSpotMarkers(mockMap, mockSpots)
+      expect(markers).toHaveLength(2)
+      expect(google.maps.marker.AdvancedMarkerElement).toHaveBeenCalledTimes(2)
+    })
+
+    it('マーカーに正しい位置情報を設定する', () => {
+      addSpotMarkers(mockMap, mockSpots)
+
+      // 1つ目のマーカー
+      expect(google.maps.marker.AdvancedMarkerElement).toHaveBeenNthCalledWith(
+        1,
+        expect.objectContaining({
+          position: { lat: 35.6812, lng: 139.7671 },
+          title: 'スポット1',
+          map: mockMap,
+          content: expect.any(HTMLElement),
+        })
+      )
+
+      // 2つ目のマーカー
+      expect(google.maps.marker.AdvancedMarkerElement).toHaveBeenNthCalledWith(
+        2,
+        expect.objectContaining({
+          position: { lat: 34.6937, lng: 135.5023 },
+          title: 'スポット2',
+          map: mockMap,
+          content: expect.any(HTMLElement),
+        })
+      )
+    })
+
+    it('カスタムHTML要素がマーカーのcontentとして設定される', () => {
+      addSpotMarkers(mockMap, mockSpots)
+
+      // 各マーカーにcontentが設定されているか確認
+      expect(createdMarkers[0].content).toBeTruthy()
+      expect(createdMarkers[0].content).toBeInstanceOf(HTMLElement)
+      expect(createdMarkers[1].content).toBeTruthy()
+      expect(createdMarkers[1].content).toBeInstanceOf(HTMLElement)
+    })
+
+    it('カスタムHTML要素にスポット情報が含まれる', () => {
+      addSpotMarkers(mockMap, mockSpots)
+
+      // 1つ目のマーカーのcontent
+      const content1 = createdMarkers[0].content as HTMLElement
+      const textContent1 = content1.textContent || ''
+      expect(textContent1).toContain('スポット1')
+      expect(textContent1).toContain('東京都')
+
+      // 2つ目のマーカーのcontent
+      const content2 = createdMarkers[1].content as HTMLElement
+      const textContent2 = content2.textContent || ''
+      expect(textContent2).toContain('スポット2')
+      expect(textContent2).toContain('大阪府')
+    })
+
+    it('クリックコールバックが提供されている場合、イベントリスナーが設定される', () => {
+      const onMarkerClick = jest.fn()
+      const addEventListener = jest.fn()
+
+      // document.createElementをモック
+      const originalCreateElement = document.createElement.bind(document)
+      document.createElement = jest.fn((tagName: string) => {
+        const element = originalCreateElement(tagName)
+        element.addEventListener = addEventListener
+        return element
+      })
+
+      addSpotMarkers(mockMap, mockSpots, onMarkerClick)
+
+      // イベントリスナーが追加されたか確認
+      expect(addEventListener).toHaveBeenCalledWith('click', expect.any(Function))
+
+      // 元に戻す
+      document.createElement = originalCreateElement
+    })
+
+    it('空の配列が渡された場合、空の配列を返す', () => {
+      const markers = addSpotMarkers(mockMap, [])
+
+      expect(markers).toHaveLength(0)
+      expect(google.maps.marker.AdvancedMarkerElement).not.toHaveBeenCalled()
+    })
+
+    it('ピンアイコンが初期表示される', () => {
+      addSpotMarkers(mockMap, mockSpots)
+
+      const content = createdMarkers[0].content as HTMLElement
+      // SVGアイコンが含まれているか確認
+      expect(content.innerHTML).toContain('<svg')
+      expect(content.innerHTML).toContain('M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z')
+    })
+
+    it('詳細カードが初期状態では非表示', () => {
+      addSpotMarkers(mockMap, mockSpots)
+
+      const content = createdMarkers[0].content as HTMLElement
+      const detailCard = content.querySelector('[class*="bottom-full"]') as HTMLElement
+
+      expect(detailCard).toBeTruthy()
+      expect(detailCard.style.display).toBe('none')
+    })
+
+    it('ピンをクリックすると詳細カードが表示される', () => {
+      addSpotMarkers(mockMap, mockSpots)
+
+      const content = createdMarkers[0].content as HTMLElement
+      const detailCard = content.querySelector('[class*="bottom-full"]') as HTMLElement
+
+      // クリックイベントをトリガー
+      content.click()
+
+      expect(detailCard.style.display).toBe('block')
+    })
+
+    it('詳細カードを再クリックすると閉じる', () => {
+      addSpotMarkers(mockMap, mockSpots)
+
+      const content = createdMarkers[0].content as HTMLElement
+      const detailCard = content.querySelector('[class*="bottom-full"]') as HTMLElement
+
+      // 1回目のクリック: 開く
+      content.click()
+      expect(detailCard.style.display).toBe('block')
+
+      // 2回目のクリック: 閉じる
+      content.click()
+      expect(detailCard.style.display).toBe('none')
+    })
+
+    it('別のマーカーをクリックすると他の詳細カードが閉じる', () => {
+      addSpotMarkers(mockMap, mockSpots)
+
+      const content1 = createdMarkers[0].content as HTMLElement
+      const content2 = createdMarkers[1].content as HTMLElement
+      const detailCard1 = content1.querySelector('[class*="bottom-full"]') as HTMLElement
+      const detailCard2 = content2.querySelector('[class*="bottom-full"]') as HTMLElement
+
+      // 1つ目のマーカーをクリック
+      content1.click()
+      expect(detailCard1.style.display).toBe('block')
+      expect(detailCard2.style.display).toBe('none')
+
+      // 2つ目のマーカーをクリック
+      content2.click()
+      expect(detailCard1.style.display).toBe('none')
+      expect(detailCard2.style.display).toBe('block')
+    })
+  })
+
+  describe('clearMarkers', () => {
+    it('すべてのマーカーを地図から削除する', () => {
+      const mockMarkers = [
+        { map: mockMap },
+        { map: mockMap },
+        { map: mockMap },
+      ] as unknown as google.maps.marker.AdvancedMarkerElement[]
+
+      clearMarkers(mockMarkers)
+
+      // Advanced Markersはmapプロパティをnullに設定して削除
+      mockMarkers.forEach((marker) => {
+        expect(marker.map).toBeNull()
+      })
+    })
+
+    it('空の配列が渡された場合、エラーなく処理される', () => {
+      expect(() => clearMarkers([])).not.toThrow()
+    })
+  })
+})
