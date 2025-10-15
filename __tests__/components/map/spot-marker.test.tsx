@@ -4,7 +4,19 @@ import {
 } from '@/components/map/spot-marker'
 import type { PlaceResult } from '@/lib/maps/places'
 
-const mockMap = {} as google.maps.Map
+// マップのモックメソッド
+const mockPanTo = jest.fn()
+const mockGetZoom = jest.fn(() => 16)
+const mockGetProjection = jest.fn(() => ({
+  fromLatLngToPoint: jest.fn(() => ({ x: 100, y: 100 })),
+  fromPointToLatLng: jest.fn(() => ({ lat: () => 35.6812, lng: () => 139.7671 })),
+}))
+
+const mockMap = {
+  panTo: mockPanTo,
+  getZoom: mockGetZoom,
+  getProjection: mockGetProjection,
+} as unknown as google.maps.Map
 
 // 作成されたマーカーインスタンスを保存する配列
 const createdMarkers: Array<{
@@ -15,6 +27,8 @@ const createdMarkers: Array<{
 // Google Maps APIグローバルオブジェクトのモック（Advanced Markers API対応）
 global.google = {
   maps: {
+    LatLng: jest.fn((lat: number, lng: number) => ({ lat, lng })),
+    Point: jest.fn((x: number, y: number) => ({ x, y })),
     marker: {
       AdvancedMarkerElement: jest.fn((options: { content?: HTMLElement }) => {
         const markerInstance = {
@@ -49,6 +63,9 @@ describe('spot-marker', () => {
   beforeEach(() => {
     jest.clearAllMocks()
     createdMarkers.length = 0 // マーカー配列をクリア
+    mockPanTo.mockClear()
+    mockGetZoom.mockClear()
+    mockGetProjection.mockClear()
   })
 
   describe('addSpotMarkers', () => {
@@ -225,6 +242,18 @@ describe('spot-marker', () => {
 
       expect(detailCards[0].style.display).toBe('none')
       expect(detailCards[1].style.display).toBe('block')
+    })
+
+    it('ピンをクリックすると詳細カード表示と同時にマップがスムーズに移動する', () => {
+      addSpotMarkers(mockMap, mockSpots)
+
+      const content = createdMarkers[0].content as HTMLElement
+
+      // クリックイベントをトリガー
+      content.click()
+
+      // panToが呼ばれたことを確認（スムーズな移動）
+      expect(mockPanTo).toHaveBeenCalled()
     })
   })
 

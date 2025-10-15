@@ -52,9 +52,13 @@ function SpotSelectionContent() {
     // 新しいスポットが追加された場合、最後に追加されたスポットにフォーカス
     if (selectedSpots.length > previousSpotsCount) {
       const latestSpot = selectedSpots[selectedSpots.length - 1]
-      // マップを新しいスポットの位置に移動してズーム
-      mapRef.current.setCenter({ lat: latestSpot.lat, lng: latestSpot.lng })
-      mapRef.current.setZoom(16) // 詳細が見えるズームレベル
+
+      // ズームレベルを設定（詳細が見えるレベル）
+      mapRef.current.setZoom(16)
+
+      // マップを新しいスポットの位置にスムーズに移動
+      // panTo()を使用することでアニメーション付きの移動になる
+      mapRef.current.panTo({ lat: latestSpot.lat, lng: latestSpot.lng })
 
       // 最後に追加されたスポットの詳細カードを自動的に表示
       if (detailCards.length > 0) {

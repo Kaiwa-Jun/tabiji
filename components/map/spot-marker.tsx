@@ -3,6 +3,70 @@
 import type { PlaceResult } from '@/lib/maps/places'
 
 /**
+ * マップをマーカー位置にスムーズに移動（詳細カード表示用にオフセット調整）
+ * 詳細カードが上部に表示されるため、ピンを画面の少し下に配置することで
+ * ピンと詳細カードの両方が見やすくなる
+ *
+ * @param map - Google Maps インスタンス
+ * @param lat - マーカーの緯度
+ * @param lng - マーカーの経度
+ */
+function panToMarkerWithOffset(
+  map: google.maps.Map,
+  lat: number,
+  lng: number
+): void {
+  // 詳細カードの高さ（約150px）を考慮して、ピンを画面の下側に配置
+  const DETAIL_CARD_HEIGHT_OFFSET = 120 // ピクセル単位のオフセット
+
+  // 現在の投影を取得
+  const projection = map.getProjection()
+  if (!projection) {
+    // 投影が利用できない場合は通常のpanToを使用
+    map.panTo({ lat, lng })
+    return
+  }
+
+  // 緯度経度をピクセル座標に変換
+  const scale = Math.pow(2, map.getZoom() || 0)
+  const worldCoordinate = projection.fromLatLngToPoint(
+    new google.maps.LatLng(lat, lng)
+  )
+
+  if (!worldCoordinate) {
+    map.panTo({ lat, lng })
+    return
+  }
+
+  // ピクセルオフセットを緯度に変換
+  const pixelCoordinate = new google.maps.Point(
+    worldCoordinate.x * scale,
+    worldCoordinate.y * scale
+  )
+
+  // Y座標をオフセット（詳細カードの高さ分）
+  const offsetPixelCoordinate = new google.maps.Point(
+    pixelCoordinate.x,
+    pixelCoordinate.y + DETAIL_CARD_HEIGHT_OFFSET
+  )
+
+  // ピクセル座標を緯度経度に変換
+  const offsetWorldCoordinate = new google.maps.Point(
+    offsetPixelCoordinate.x / scale,
+    offsetPixelCoordinate.y / scale
+  )
+
+  const offsetLatLng = projection.fromPointToLatLng(offsetWorldCoordinate)
+
+  if (offsetLatLng) {
+    // スムーズにアニメーション移動
+    map.panTo(offsetLatLng)
+  } else {
+    map.panTo({ lat, lng })
+  }
+}
+
+/**
  * ピンアイコンのHTML要素を生成
  *
  * @returns ピンアイコンのHTML要素
@@ -196,6 +260,10 @@ export function addSpotMarkers(
       } else {
         // 閉じている場合は開く
         detailCard.style.display = 'block'
+
+        // マップをピンの位置にスムーズに移動（詳細カード表示時のみ）
+        // 詳細カードが上部に表示されるため、少し下にオフセットして中央に配置
+        panToMarkerWithOffset(map, spot.lat, spot.lng)
       }
 
       // コールバックがあれば実行
