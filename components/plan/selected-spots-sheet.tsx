@@ -15,6 +15,7 @@ interface SelectedSpotsSheetProps {
 
 export interface SelectedSpotsSheetRef {
   scrollToSpot: (index: number) => void
+  setSheetState: (state: SheetState) => void
 }
 
 export type SheetState = 'minimized' | 'expanded'
@@ -36,7 +37,7 @@ export const SelectedSpotsSheet = forwardRef<SelectedSpotsSheetRef, SelectedSpot
     const sheetRef = useRef<HTMLDivElement>(null)
     const scrollContainerRef = useRef<HTMLDivElement>(null)
 
-    // 外部から呼び出せるスクロール関数を公開
+    // 外部から呼び出せる関数を公開
     useImperativeHandle(ref, () => ({
       scrollToSpot: (index: number) => {
         const container = scrollContainerRef.current
@@ -56,6 +57,9 @@ export const SelectedSpotsSheet = forwardRef<SelectedSpotsSheetRef, SelectedSpot
           left: targetScrollLeft,
           behavior: 'smooth',
         })
+      },
+      setSheetState: (state: SheetState) => {
+        setSheetState(state)
       },
     }))
 

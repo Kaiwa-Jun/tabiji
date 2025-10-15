@@ -28,6 +28,7 @@ function SpotSelectionContent() {
   const detailCardsRef = useRef<HTMLElement[]>([])
   const sheetRef = useRef<SelectedSpotsSheetRef>(null)
   const [sheetState, setSheetState] = useState<SheetState>('minimized')
+  const visibleDetailCardIndexRef = useRef<number | null>(null)
 
   // マップ初期化完了時のコールバック
   const handleMapReady = useCallback((map: google.maps.Map) => {
@@ -41,21 +42,15 @@ function SpotSelectionContent() {
 
       const spot = selectedSpots[index]
 
-      // 1. 詳細カードを即座に表示（マップ移動前）
-      if (detailCardsRef.current[index]) {
-        // 他のすべての詳細カードを閉じる
-        detailCardsRef.current.forEach((card) => {
-          card.style.display = 'none'
-        })
-        // このカードを表示
-        detailCardsRef.current[index].style.display = 'block'
-      }
+      // スポットカードスワイプ時は詳細カードを表示しない
+      // ピンクリック時のみ詳細カードを表示する仕様のため、
+      // ここでは詳細カードの表示制御は行わない
 
-      // 2. マップを対応するスポットの位置にスムーズに移動（詳細カード表示後）
+      // マップを対応するスポットの位置にスムーズに移動
       // シート状態に応じてオフセット値を変更
-      // expanded（展開）: 50px（シートが高いため、オフセットを小さくしてピンを上に表示）
+      // expanded（展開）: 30px（シートが高いため、オフセットを小さくしてピンを上に表示）
       // minimized（最小化）: 100px（通常のオフセット）
-      const offset = sheetState === 'expanded' ? 50 : 100
+      const offset = sheetState === 'expanded' ? 30 : 100
       panToMarkerWithOffset(mapRef.current, spot.lat, spot.lng, offset)
     },
     [selectedSpots, sheetState]
@@ -75,9 +70,26 @@ function SpotSelectionContent() {
       mapRef.current,
       selectedSpots,
       (spot) => {
-        // マーカークリック時: 対応するスポットカードを中央にスクロール
+        // マーカークリック時: 詳細カードの表示/非表示をトグル
         const spotIndex = selectedSpots.findIndex((s) => s.placeId === spot.placeId)
         if (spotIndex !== -1) {
+          // すべての詳細カードを閉じる
+          detailCardsRef.current.forEach((card) => {
+            card.style.display = 'none'
+          })
+
+          // 同じピンをクリックした場合は非表示（トグル）
+          if (visibleDetailCardIndexRef.current === spotIndex) {
+            visibleDetailCardIndexRef.current = null
+          } else {
+            // 別のピンをクリックした場合は、そのピンの詳細カードを表示
+            if (detailCardsRef.current[spotIndex]) {
+              detailCardsRef.current[spotIndex].style.display = 'block'
+            }
+            visibleDetailCardIndexRef.current = spotIndex
+          }
+
+          // スポットカードを中央にスクロール
           sheetRef.current?.scrollToSpot(spotIndex)
         }
       }
@@ -98,16 +110,18 @@ function SpotSelectionContent() {
       // panTo()を使用することでアニメーション付きの移動になる
       mapRef.current.panTo({ lat: latestSpot.lat, lng: latestSpot.lng })
 
-      // 最後に追加されたスポットの詳細カードを自動的に表示
-      if (detailCards.length > 0) {
-        const lastDetailCard = detailCards[detailCards.length - 1]
-        lastDetailCard.style.display = 'block'
-      }
+      // ピン上の詳細カードは使用しないため、自動表示はコメントアウト
+      // 将来的に必要になった場合は、以下のコメントを解除
+      // if (detailCards.length > 0) {
+      //   const lastDetailCard = detailCards[detailCards.length - 1]
+      //   lastDetailCard.style.display = 'block'
+      // }
 
       // 選択済みスポットシートを最後のスポット（一番右）にスクロール
-      // setTimeoutで少し遅延させることで、モーダルが閉じてシートが表示された後にスクロール
+      // setTimeoutで少し遅延させることで、モーダルが閉じてシートが表示された後にスクロール・展開
       setTimeout(() => {
         sheetRef.current?.scrollToSpot(latestIndex)
+        sheetRef.current?.setSheetState('expanded')
       }, 100)
     }
 
