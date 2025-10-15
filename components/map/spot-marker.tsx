@@ -184,11 +184,13 @@ function createDetailCard(spot: PlaceResult): HTMLElement {
  *
  * @param spot - スポット情報
  * @param color - ピンの色（デフォルト: #ef4444 赤色）
+ * @param showLabel - スポット名ラベルを表示するか（デフォルト: false）
  * @returns マーカー用のHTML要素と詳細カードの要素
  */
 function createMarkerContent(
   spot: PlaceResult,
-  color: string = '#ef4444'
+  color: string = '#ef4444',
+  showLabel: boolean = false
 ): {
   container: HTMLElement
   detailCard: HTMLElement
@@ -206,6 +208,26 @@ function createMarkerContent(
   container.appendChild(detailCard)
   container.appendChild(pin)
 
+  // スポット名ラベル（ピンの右側に絶対配置）
+  if (showLabel) {
+    const label = document.createElement('div')
+    label.className = 'absolute left-full top-1/2 -translate-y-1/2 ml-2 whitespace-nowrap rounded px-2 py-1 text-sm font-medium pointer-events-none'
+    label.style.cssText = `
+      color: ${color};
+      text-shadow:
+        -1px -1px 0 #fff,
+        1px -1px 0 #fff,
+        -1px 1px 0 #fff,
+        1px 1px 0 #fff,
+        -2px 0 0 #fff,
+        2px 0 0 #fff,
+        0 -2px 0 #fff,
+        0 2px 0 #fff;
+    `
+    label.textContent = spot.name
+    container.appendChild(label)
+  }
+
   return { container, detailCard }
 }
 
@@ -217,6 +239,7 @@ function createMarkerContent(
  * @param spots - 表示するスポット配列
  * @param onMarkerClick - マーカークリック時のコールバック（オプション）
  * @param color - ピンの色（デフォルト: #ef4444 赤色）
+ * @param showLabel - スポット名ラベルを表示するか（デフォルト: false）
  * @returns 作成されたマーカー配列と詳細カード要素の配列
  *
  * @example
@@ -234,7 +257,8 @@ export function addSpotMarkers(
   map: google.maps.Map,
   spots: PlaceResult[],
   onMarkerClick?: (spot: PlaceResult) => void,
-  color: string = '#ef4444'
+  color: string = '#ef4444',
+  showLabel: boolean = false
 ): {
   markers: google.maps.marker.AdvancedMarkerElement[]
   detailCards: HTMLElement[]
@@ -244,7 +268,7 @@ export function addSpotMarkers(
 
   spots.forEach((spot, index) => {
     // カスタムHTML要素を作成
-    const { container, detailCard } = createMarkerContent(spot, color)
+    const { container, detailCard } = createMarkerContent(spot, color, showLabel)
 
     // Advanced Marker Elementを作成（contentにカスタムHTML要素を指定）
     // zIndexは初期値として設定（詳細カード表示時に動的に変更）

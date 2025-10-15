@@ -118,7 +118,9 @@ function SpotSelectionContent() {
           // スポットカードを中央にスクロール
           sheetRef.current?.scrollToSpot(spotIndex)
         }
-      }
+      },
+      '#ef4444', // 赤色
+      true // スポット名ラベルを表示
     )
 
     markersRef.current = markers
@@ -216,7 +218,8 @@ function SpotSelectionContent() {
           }
         }
       },
-      '#3b82f6' // 青色（Tailwind blue-500相当）
+      '#3b82f6', // 青色（Tailwind blue-500相当）
+      true // スポット名ラベルを表示
     )
 
     searchResultMarkersRef.current = markers
