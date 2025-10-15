@@ -20,6 +20,7 @@ function SpotSelectionContent() {
   const { openModal, selectedSpots, removeSpot } = useSearchModal()
   const mapRef = useRef<google.maps.Map | null>(null)
   const markersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([])
+  const detailCardsRef = useRef<HTMLElement[]>([])
 
   // マップ初期化完了時のコールバック
   const handleMapReady = useCallback((map: google.maps.Map) => {
@@ -36,7 +37,7 @@ function SpotSelectionContent() {
     clearMarkers(markersRef.current)
 
     // 新しいマーカーを追加（カスタムHTML要素を使用）
-    const markers = addSpotMarkers(
+    const { markers, detailCards } = addSpotMarkers(
       mapRef.current,
       selectedSpots,
       (spot) => {
@@ -46,6 +47,7 @@ function SpotSelectionContent() {
     )
 
     markersRef.current = markers
+    detailCardsRef.current = detailCards
 
     // 新しいスポットが追加された場合、最後に追加されたスポットにフォーカス
     if (selectedSpots.length > previousSpotsCount) {
@@ -53,12 +55,19 @@ function SpotSelectionContent() {
       // マップを新しいスポットの位置に移動してズーム
       mapRef.current.setCenter({ lat: latestSpot.lat, lng: latestSpot.lng })
       mapRef.current.setZoom(16) // 詳細が見えるズームレベル
+
+      // 最後に追加されたスポットの詳細カードを自動的に表示
+      if (detailCards.length > 0) {
+        const lastDetailCard = detailCards[detailCards.length - 1]
+        lastDetailCard.style.display = 'block'
+      }
     }
 
     // クリーンアップ
     return () => {
       clearMarkers(markersRef.current)
       markersRef.current = []
+      detailCardsRef.current = []
     }
   }, [selectedSpots])
 

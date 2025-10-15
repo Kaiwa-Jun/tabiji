@@ -144,20 +144,27 @@ function createMarkerContent(spot: PlaceResult): {
  * @param map - Google Maps インスタンス
  * @param spots - 表示するスポット配列
  * @param onMarkerClick - マーカークリック時のコールバック（オプション）
- * @returns 作成されたマーカー配列
+ * @returns 作成されたマーカー配列と詳細カード要素の配列
  *
  * @example
  * ```tsx
- * const markers = addSpotMarkers(map, selectedSpots, (spot) => {
+ * const { markers, detailCards } = addSpotMarkers(map, selectedSpots, (spot) => {
  *   console.log('Clicked:', spot.name)
  * })
+ * // 最後のスポットの詳細カードを自動表示
+ * if (detailCards.length > 0) {
+ *   detailCards[detailCards.length - 1].style.display = 'block'
+ * }
  * ```
  */
 export function addSpotMarkers(
   map: google.maps.Map,
   spots: PlaceResult[],
   onMarkerClick?: (spot: PlaceResult) => void
-): google.maps.marker.AdvancedMarkerElement[] {
+): {
+  markers: google.maps.marker.AdvancedMarkerElement[]
+  detailCards: HTMLElement[]
+} {
   const markers: google.maps.marker.AdvancedMarkerElement[] = []
   const detailCards: HTMLElement[] = []
 
@@ -199,7 +206,7 @@ export function addSpotMarkers(
     detailCards.push(detailCard)
   })
 
-  return markers
+  return { markers, detailCards }
 }
 
 /**

@@ -53,8 +53,9 @@ describe('spot-marker', () => {
 
   describe('addSpotMarkers', () => {
     it('スポット数と同じ数のマーカーを作成する', () => {
-      const markers = addSpotMarkers(mockMap, mockSpots)
+      const { markers, detailCards } = addSpotMarkers(mockMap, mockSpots)
       expect(markers).toHaveLength(2)
+      expect(detailCards).toHaveLength(2)
       expect(google.maps.marker.AdvancedMarkerElement).toHaveBeenCalledTimes(2)
     })
 
@@ -132,9 +133,10 @@ describe('spot-marker', () => {
     })
 
     it('空の配列が渡された場合、空の配列を返す', () => {
-      const markers = addSpotMarkers(mockMap, [])
+      const { markers, detailCards } = addSpotMarkers(mockMap, [])
 
       expect(markers).toHaveLength(0)
+      expect(detailCards).toHaveLength(0)
       expect(google.maps.marker.AdvancedMarkerElement).not.toHaveBeenCalled()
     })
 
@@ -201,6 +203,28 @@ describe('spot-marker', () => {
       content2.click()
       expect(detailCard1.style.display).toBe('none')
       expect(detailCard2.style.display).toBe('block')
+    })
+
+    it('詳細カード要素の配列を返す', () => {
+      const { detailCards } = addSpotMarkers(mockMap, mockSpots)
+
+      expect(detailCards).toHaveLength(2)
+      expect(detailCards[0]).toBeInstanceOf(HTMLElement)
+      expect(detailCards[1]).toBeInstanceOf(HTMLElement)
+
+      // 詳細カードが初期状態で非表示であることを確認
+      expect(detailCards[0].style.display).toBe('none')
+      expect(detailCards[1].style.display).toBe('none')
+    })
+
+    it('返された詳細カード要素を直接操作して表示できる', () => {
+      const { detailCards } = addSpotMarkers(mockMap, mockSpots)
+
+      // 最後の詳細カードを表示
+      detailCards[detailCards.length - 1].style.display = 'block'
+
+      expect(detailCards[0].style.display).toBe('none')
+      expect(detailCards[1].style.display).toBe('block')
     })
   })
 
