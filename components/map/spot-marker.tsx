@@ -16,9 +16,9 @@ function panToMarkerWithOffset(
   lat: number,
   lng: number
 ): void {
-  // 詳細カードの高さ（約150px）を考慮して、ピンを画面の下側に配置
-  // 既存ピンをタップした場合は、より大きなオフセットで下側に表示
-  const DETAIL_CARD_HEIGHT_OFFSET = 160 // ピクセル単位のオフセット
+  // 詳細カードの高さ（約150px）+ マージンを考慮して、ピンを画面の下側に配置
+  // 既存ピンをタップした場合は、大きなオフセットで画面下部に表示
+  const DETAIL_CARD_HEIGHT_OFFSET = 250 // ピクセル単位のオフセット
 
   // 現在の投影を取得
   const projection = map.getProjection()
