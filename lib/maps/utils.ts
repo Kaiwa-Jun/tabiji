@@ -101,6 +101,46 @@ export function calculateDistance(from: Coordinates, to: Coordinates): number {
 }
 
 /**
+ * 2つの座標間の距離を計算する（メートル単位）
+ * Haversine公式を使用した球面上の距離計算
+ * Google Maps API非依存で動作する
+ *
+ * @param from - 始点座標
+ * @param to - 終点座標
+ * @returns 距離（メートル）
+ *
+ * @example
+ * ```typescript
+ * const distance = calculateDistanceHaversine(
+ *   { lat: 35.6812, lng: 139.7671 }, // 東京駅
+ *   { lat: 35.6586, lng: 139.7454 }  // 東京タワー
+ * )
+ * console.log(`距離: ${Math.round(distance)}m`) // 距離: 2889m
+ * ```
+ */
+export function calculateDistanceHaversine(
+  from: Coordinates,
+  to: Coordinates
+): number {
+  const R = 6371000 // 地球の半径（メートル）
+
+  // 緯度・経度をラジアンに変換
+  const lat1 = (from.lat * Math.PI) / 180
+  const lat2 = (to.lat * Math.PI) / 180
+  const deltaLat = ((to.lat - from.lat) * Math.PI) / 180
+  const deltaLng = ((to.lng - from.lng) * Math.PI) / 180
+
+  // Haversine公式
+  const a =
+    Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(deltaLng / 2) * Math.sin(deltaLng / 2)
+
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
+
+  return R * c
+}
+
+/**
  * 地図の中心座標を取得する
  *
  * @param map - Google Mapインスタンス
