@@ -6,6 +6,7 @@ import {
   panToLocation,
   fitBounds,
   calculateDistance,
+  calculateDistanceHaversine,
   getMapCenter,
   getMapZoom,
   calculateCenter,
@@ -289,6 +290,55 @@ describe('Maps Utils', () => {
       const center = calculateCenter(locations)
 
       expect(center).toEqual({ lat: 35.5, lng: 139.5 })
+    })
+  })
+
+  describe('calculateDistanceHaversine', () => {
+    it('2点間の距離を計算する（Google Maps API非依存）', () => {
+      const from = { lat: 35.6812, lng: 139.7671 } // 東京駅
+      const to = { lat: 35.6586, lng: 139.7454 } // 東京タワー
+
+      const distance = calculateDistanceHaversine(from, to)
+
+      // Haversine公式による実際の距離は約3187m
+      expect(distance).toBeCloseTo(3187, 0)
+    })
+
+    it('同じ座標間の距離は0になる', () => {
+      const location = { lat: 35.6812, lng: 139.7671 }
+      const distance = calculateDistanceHaversine(location, location)
+
+      expect(distance).toBe(0)
+    })
+
+    it('北半球の長距離を計算できる', () => {
+      const from = { lat: 35.6812, lng: 139.7671 } // 東京
+      const to = { lat: 34.6937, lng: 135.5023 } // 大阪
+
+      const distance = calculateDistanceHaversine(from, to)
+
+      // 実際の距離は約400km（400000m）
+      expect(distance).toBeCloseTo(400000, -4)
+    })
+
+    it('非常に近い距離を計算できる', () => {
+      const from = { lat: 35.6812, lng: 139.7671 }
+      const to = { lat: 35.6813, lng: 139.7672 }
+
+      const distance = calculateDistanceHaversine(from, to)
+
+      // 約14m（0.0001度の差）
+      expect(distance).toBeCloseTo(14, 0)
+    })
+
+    it('赤道付近の距離を計算できる', () => {
+      const from = { lat: 0.0, lng: 0.0 }
+      const to = { lat: 0.0, lng: 1.0 }
+
+      const distance = calculateDistanceHaversine(from, to)
+
+      // 赤道上の1度は約111km
+      expect(distance).toBeCloseTo(111000, -3)
     })
   })
 })
