@@ -11,6 +11,7 @@ interface SelectedSpotsSheetProps {
   onRemove: (spot: PlaceResult) => void
   onSpotChange?: (index: number) => void
   onSheetStateChange?: (state: SheetState) => void
+  isPreviewMode?: boolean
 }
 
 export interface SelectedSpotsSheetRef {
@@ -25,7 +26,10 @@ export type SheetState = 'minimized' | 'expanded'
  * 2段階の表示状態を持つ（最小化・展開）
  */
 export const SelectedSpotsSheet = forwardRef<SelectedSpotsSheetRef, SelectedSpotsSheetProps>(
-  function SelectedSpotsSheet({ spots, onRemove, onSpotChange, onSheetStateChange }, ref) {
+  function SelectedSpotsSheet(
+    { spots, onRemove, onSpotChange, onSheetStateChange, isPreviewMode = false },
+    ref
+  ) {
     const [sheetState, setSheetState] = useState<SheetState>('minimized')
 
     // シート状態が変更されたら通知
@@ -231,7 +235,7 @@ export const SelectedSpotsSheet = forwardRef<SelectedSpotsSheetRef, SelectedSpot
         <div className="flex items-center justify-between px-4 pb-3">
           <div className="flex items-center gap-2">
             <MapPin className="h-5 w-5 text-primary" />
-            <h3 className="font-medium">選択済みスポット</h3>
+            <h3 className="font-medium">{isPreviewMode ? 'プラン候補' : '選択済みスポット'}</h3>
             <span className="rounded-full bg-primary px-2 py-0.5 text-xs font-medium text-primary-foreground">
               {spots.length}件
             </span>

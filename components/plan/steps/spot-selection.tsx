@@ -4,8 +4,11 @@ import { useRef, useEffect, useCallback, useState } from 'react'
 import { GoogleMapWrapper } from '@/components/map/google-map-wrapper'
 import { JAPAN_CENTER, JAPAN_ZOOM } from '@/lib/maps/constants'
 import { SearchModalProvider, useSearchModal } from '@/contexts/search-modal-context'
+import { usePlanForm } from '@/contexts/plan-form-context'
 import { SearchBarTrigger } from './spot-selection/search-bar-trigger'
 import { SearchModal } from './spot-selection/search-modal'
+import { TabSwitcher } from './spot-selection/tab-switcher'
+import { RouteListView } from '../route-list-view'
 import {
   SelectedSpotsSheet,
   type SelectedSpotsSheetRef,
@@ -29,6 +32,7 @@ function SpotSelectionContent() {
     isOpen: isModalOpen,
     searchResults,
   } = useSearchModal()
+  const { formData, updateFormData } = usePlanForm()
   const mapRef = useRef<google.maps.Map | null>(null)
   const markersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([])
   const searchResultMarkersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([])
@@ -36,13 +40,49 @@ function SpotSelectionContent() {
   const searchResultDetailCardsRef = useRef<HTMLElement[]>([])
   const sheetRef = useRef<SelectedSpotsSheetRef>(null)
   const [sheetState, setSheetState] = useState<SheetState>('minimized')
+  const [activeTab, setActiveTab] = useState<'map' | 'route-list'>('map')
   const visibleDetailCardIndexRef = useRef<number | null>(null)
   const visibleSearchResultCardIndexRef = useRef<number | null>(null)
+  const planCreatedRef = useRef<boolean>(false)
 
   // マップ初期化完了時のコールバック
   const handleMapReady = useCallback((map: google.maps.Map) => {
     mapRef.current = map
   }, [])
+
+  // 選択されたスポット数をPlanFormContextに同期
+  useEffect(() => {
+    updateFormData({ selectedSpotsCount: selectedSpots.length })
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSpots.length])
+
+  // プレビューモードに切り替わったときにプラン作成処理を実行
+  useEffect(() => {
+    if (formData.isPreviewMode && !planCreatedRef.current && selectedSpots.length >= 2) {
+      console.log('[useEffect] プレビューモードに切り替わりました')
+      console.log('[useEffect] プラン作成処理を開始します')
+      console.log('[useEffect] 選択されたスポット数:', selectedSpots.length)
+
+      // Phase 3で以下の処理を実装予定:
+      // 1. 訪問順序の最適化
+      // 2. スポット間の移動時間取得
+      // 3. 訪問時刻の自動計算
+      // 4. 日ごとの配分
+
+      // 仮実装: optimizedSpotsに選択されたスポットをそのまま設定
+      updateFormData({ optimizedSpots: selectedSpots })
+      planCreatedRef.current = true
+
+      // タブをマップに戻す
+      setActiveTab('map')
+    }
+
+    // プレビューモードを解除したらフラグをリセット
+    if (!formData.isPreviewMode && planCreatedRef.current) {
+      planCreatedRef.current = false
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.isPreviewMode, selectedSpots])
 
   // スポットカードのスクロール時に対応するピンを中央に表示
   const handleSpotChange = useCallback(
@@ -235,7 +275,7 @@ function SpotSelectionContent() {
 
   return (
     <div className="relative h-full w-full">
-      {/* Google Map - 日本全体を初期表示 */}
+      {/* Google Map - 常にレンダリング（状態を保持するため） */}
       <GoogleMapWrapper
         lat={JAPAN_CENTER.lat}
         lng={JAPAN_CENTER.lng}
@@ -245,20 +285,29 @@ function SpotSelectionContent() {
         onMapReady={handleMapReady}
       />
 
-      {/* 検索バートリガー */}
-      <SearchBarTrigger onClick={openModal} />
+      {/* 通常モード時: 検索バー / プレビューモード時: タブ切り替え */}
+      {formData.isPreviewMode ? (
+        <TabSwitcher activeTab={activeTab} onTabChange={setActiveTab} />
+      ) : (
+        <SearchBarTrigger onClick={openModal} />
+      )}
+
+      {/* 旅程リストビュー（プレビューモード時かつ旅程リストタブ選択時のみ表示） */}
+      {/* モーダル形式でマップの上に重ねて表示 */}
+      {formData.isPreviewMode && activeTab === 'route-list' && <RouteListView />}
 
       {/* 検索モーダル */}
       <SearchModal />
 
-      {/* スライドアップシート：選択済みスポット表示（モーダルが閉じている時のみ表示） */}
-      {!isModalOpen && (
+      {/* スライドアップシート：選択済みスポット表示（モーダルと旅程リストが閉じている時のみ表示） */}
+      {!isModalOpen && activeTab === 'map' && (
         <SelectedSpotsSheet
           ref={sheetRef}
           spots={selectedSpots}
           onRemove={removeSpot}
           onSpotChange={handleSpotChange}
           onSheetStateChange={setSheetState}
+          isPreviewMode={formData.isPreviewMode}
         />
       )}
     </div>

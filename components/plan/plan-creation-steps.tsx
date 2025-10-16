@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button'
 import { ChevronRight, ChevronLeft } from 'lucide-react'
 import { DateInputStep } from './steps/date-input'
 import { SpotSelectionStep } from './steps/spot-selection'
-import { PreviewStep } from './steps/preview'
 import { CompletionStep } from './steps/completion'
 
 /**
@@ -21,7 +20,7 @@ import { CompletionStep } from './steps/completion'
  * ```
  */
 export function PlanCreationSteps() {
-  const { formData, nextStep, prevStep } = usePlanForm()
+  const { formData, nextStep, prevStep, updateFormData } = usePlanForm()
 
   /**
    * 次のステップに進めるかを検証
@@ -32,8 +31,8 @@ export function PlanCreationSteps() {
         // ステップ1: 日程入力 - 開始日と終了日が必須
         return formData.startDate !== null && formData.endDate !== null
       case 2:
-        // ステップ2: スポット選択 - 最低1つのスポット（マスタorカスタム）
-        return formData.selectedSpots.length > 0 || formData.customSpots.length > 0
+        // ステップ2: スポット選択 - 2箇所以上のスポット選択が必要
+        return formData.selectedSpotsCount >= 2
       case 3:
         // ステップ3: プレビュー - 常に次へ進める
         return true
@@ -55,7 +54,8 @@ export function PlanCreationSteps() {
       case 2:
         return <SpotSelectionStep />
       case 3:
-        return <PreviewStep />
+        // ステップ3はプレビューモード（スポット選択画面でタブ表示）
+        return <SpotSelectionStep />
       case 4:
         return <CompletionStep />
       default:
@@ -67,10 +67,54 @@ export function PlanCreationSteps() {
    * 次へボタンのラベル
    */
   const getNextButtonLabel = (): string => {
+    if (formData.currentStep === 2) {
+      // ステップ2: スポット選択
+      return 'プランを作成する'
+    }
     if (formData.currentStep === 3) {
-      return 'プランを保存'
+      // ステップ3: プレビュー
+      return '保存'
     }
     return '次へ'
+  }
+
+  /**
+   * 次へボタンのクリック処理
+   */
+  const handleNextClick = () => {
+    if (formData.currentStep === 2 && !formData.isPreviewMode) {
+      // ステップ2で通常モードの場合: プラン作成処理を開始
+      // ステップ3（プレビュー）に進み、プレビューモードを有効化
+      updateFormData({ isPreviewMode: true, currentStep: 3 })
+    } else if (formData.currentStep === 3 && formData.isPreviewMode) {
+      // ステップ3でプレビューモードの場合: 保存処理
+      // Phase 7で本格的な保存処理を実装予定
+      // 現時点では次のステップ（完了画面）に進む
+      nextStep()
+    } else {
+      // その他の場合: 通常の次へ処理
+      nextStep()
+    }
+  }
+
+  /**
+   * 戻るボタンのクリック処理
+   */
+  const handlePrevClick = () => {
+    if (formData.currentStep === 3 && formData.isPreviewMode) {
+      // ステップ3でプレビューモードの場合: ステップ2に戻り、プレビューモードを解除
+      updateFormData({
+        currentStep: 2,
+        isPreviewMode: false,
+        optimizedSpots: [],
+        routeInfo: [],
+        timeSlots: null,
+        dayPlan: null,
+      })
+    } else {
+      // その他の場合: 通常の戻る処理
+      prevStep()
+    }
   }
 
   return (
@@ -80,8 +124,8 @@ export function PlanCreationSteps() {
 
       {/* コンテンツエリア */}
       <div className="flex-1 overflow-hidden">
-        {formData.currentStep === 2 ? (
-          // ステップ2（マップ）はパディングなしで画面いっぱいに表示
+        {formData.currentStep === 2 || formData.currentStep === 3 ? (
+          // ステップ2・3（マップ）はパディングなしで画面いっぱいに表示
           <div className="h-full">{renderStep()}</div>
         ) : (
           // その他のステップはパディング付き、スクロールなし、上寄せ、デスクトップで中央揃え
@@ -98,7 +142,7 @@ export function PlanCreationSteps() {
             {/* 戻るボタン（ステップ1では非表示） */}
             {formData.currentStep > 1 && (
               <Button
-                onClick={prevStep}
+                onClick={handlePrevClick}
                 variant="outline"
                 className="h-12 flex-1"
                 size="lg"
@@ -110,7 +154,7 @@ export function PlanCreationSteps() {
 
             {/* 次へボタン */}
             <Button
-              onClick={nextStep}
+              onClick={handleNextClick}
               disabled={!canGoNext()}
               className="h-12 flex-1 bg-green-500 text-white hover:bg-green-600 disabled:bg-gray-300"
               size="lg"
