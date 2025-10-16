@@ -2,13 +2,18 @@
  * 旅程最適化ロジック
  *
  * このモジュールは、旅行スポットの訪問順序を最適化し、
- * 日ごとにスポットを配分する機能を提供します。
+ * 日ごとにスポットを配分し、訪問時刻を計算する機能を提供します。
  *
  * @module itinerary
  *
  * @example
  * ```typescript
- * import { optimizeSpotOrder, allocateSpotsByDay } from '@/lib/itinerary'
+ * import {
+ *   optimizeSpotOrder,
+ *   allocateSpotsByDay,
+ *   calculateVisitTimes,
+ *   formatTime
+ * } from '@/lib/itinerary'
  *
  * // 1. スポットの訪問順序を最適化（貪欲法・最近傍法）
  * const spots = [
@@ -21,6 +26,11 @@
  * // 2. 最適化されたスポットを日ごとに配分
  * const allocated = allocateSpotsByDay(optimized, 2)
  * // 1日目: 2スポット、2日目: 1スポット
+ *
+ * // 3. 訪問時刻を自動計算
+ * const startTime = new Date('2025-04-01T09:00:00')
+ * const travelDurations = [900, 600] // 移動時間（秒）
+ * const timeSlots = calculateVisitTimes(startTime, optimized, travelDurations)
  * ```
  */
 
@@ -32,3 +42,13 @@ export { optimizeSpotOrder } from './optimizer'
 
 // 日ごとのスポット配分
 export { allocateSpotsByDay, generateDayPlan } from './spot-allocator'
+
+// 時刻計算
+export type { TimeSlot } from './time-calculator'
+export {
+  estimateStayDuration,
+  calculateVisitTimes,
+  formatTime,
+  adjustTime,
+  recalculateAfterAdjustment,
+} from './time-calculator'
