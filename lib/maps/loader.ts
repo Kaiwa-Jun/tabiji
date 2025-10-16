@@ -54,6 +54,7 @@ export function initGoogleMaps(): Promise<typeof google> {
     importLibrary('places'),
     importLibrary('geometry'),
     importLibrary('marker'), // Advanced Markers API
+    importLibrary('routes'), // Directions API
   ]).then(() => {
     // グローバルのgoogleオブジェクトを返す
     return google

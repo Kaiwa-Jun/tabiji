@@ -10,7 +10,7 @@ maps/
 ├── constants.ts        # 定数定義（ズームレベル等）（✅実装済み）
 ├── utils.ts            # 座標計算などのユーティリティ（✅実装済み）
 ├── places.ts           # Places API ラッパー（✅実装済み - issue#36）
-└── directions.ts       # Directions API ラッパー（実装予定）
+└── directions.ts       # Directions API ラッパー（✅実装済み - issue#43）
 ```
 
 ## 実装済み機能
@@ -37,6 +37,14 @@ maps/
 - `searchPlacesByArea()` - エリア名から観光スポットを検索
 - `getPlaceDetails()` - Google Places IDからスポット詳細を取得
 - `PlaceResult`型 - Places API検索結果の型定義
+
+### directions.ts（✅ issue#43で実装）
+
+- `getDirections()` - 2地点間のルート情報を取得
+- `getMultipleRoutes()` - 複数地点の経路を一括取得
+- `calculateTotalDuration()` - 移動時間の合計を計算
+- `formatDuration()` - 秒を「◯時間◯分」形式に変換
+- `RouteInfo`型 - ルート情報の型定義
 
 ## 使用例
 
@@ -94,6 +102,35 @@ const spots = await searchPlacesByArea('東京都')
 fitBounds(map, spots)
 ```
 
-## 実装予定
+### 2地点間の移動時間を取得
 
-- フェーズ5: Directions API（ルート検索・最適化）
+```typescript
+import { getDirections, formatDuration } from '@/lib/maps/directions'
+
+const route = await getDirections(
+  { lat: 35.6586, lng: 139.7454 }, // 東京タワー
+  { lat: 35.6585, lng: 139.7471 } // 増上寺
+)
+
+if (route) {
+  console.log(`距離: ${(route.distance / 1000).toFixed(1)}km`)
+  console.log(`所要時間: ${formatDuration(route.duration)}`)
+}
+```
+
+### 複数スポット間の移動時間を計算
+
+```typescript
+import { getMultipleRoutes, calculateTotalDuration, formatDuration } from '@/lib/maps/directions'
+
+const locations = [
+  { lat: 35.6812, lng: 139.7671 }, // 東京駅
+  { lat: 35.6586, lng: 139.7454 }, // 東京タワー
+  { lat: 35.7101, lng: 139.8107 }, // スカイツリー
+]
+
+const routes = await getMultipleRoutes(locations)
+const total = calculateTotalDuration(routes)
+
+console.log(`全${routes.length}区間の合計移動時間: ${formatDuration(total)}`)
+```
