@@ -124,7 +124,7 @@ export function RouteListView() {
               {/* その日のスポットリスト */}
               <div className="space-y-3 pl-2">
                 {spotsForDay.length > 0 ? (
-                  spotsForDay.map((spot) => {
+                  spotsForDay.map((spot: PlaceResult) => {
                     const spotNumber = ++globalSpotIndex
                     return (
                       <Card
