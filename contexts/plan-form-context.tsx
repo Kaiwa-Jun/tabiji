@@ -53,6 +53,12 @@ const initialFormData: PlanFormData = {
   prefecture: null,
   selectedSpots: [],
   customSpots: [],
+  isPreviewMode: false,
+  selectedSpotsCount: 0,
+  optimizedSpots: [],
+  routeInfo: [],
+  timeSlots: null,
+  dayPlan: null,
   currentStep: 1,
   isComplete: false,
 }

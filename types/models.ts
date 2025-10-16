@@ -6,6 +6,9 @@
  */
 
 import type { Database } from './database'
+import type { PlaceResult } from '@/lib/maps/places'
+import type { RouteInfo } from '@/lib/maps/directions'
+import type { TimeSlot, OptimizedSpot } from '@/lib/itinerary'
 
 // ========================================
 // Row型（データ取得時）
@@ -196,6 +199,20 @@ export interface PlanFormData {
   selectedSpots: Spot[]
   /** カスタムスポット（手動追加） */
   customSpots: CustomSpot[]
+
+  // プレビューモード関連
+  /** プレビューモード中かどうか */
+  isPreviewMode: boolean
+  /** 選択されたスポット数（SearchModalContextから同期） */
+  selectedSpotsCount: number
+  /** 最適化されたスポット順序 */
+  optimizedSpots: PlaceResult[]
+  /** スポット間のルート情報 */
+  routeInfo: RouteInfo[]
+  /** 各スポットの訪問時刻情報 */
+  timeSlots: Map<string, TimeSlot> | null
+  /** 日ごとに配分されたスポット */
+  dayPlan: Map<number, OptimizedSpot[]> | null
 
   // メタ情報
   /** 現在のステップ（1-5） */
