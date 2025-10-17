@@ -1,6 +1,7 @@
 'use client'
 
 import { useRef, useEffect, useCallback, useState } from 'react'
+import { differenceInDays } from 'date-fns'
 import { GoogleMapWrapper } from '@/components/map/google-map-wrapper'
 import { JAPAN_CENTER, JAPAN_ZOOM } from '@/lib/maps/constants'
 import { SearchModalProvider, useSearchModal } from '@/contexts/search-modal-context'
@@ -19,6 +20,7 @@ import {
   clearMarkers,
   panToMarkerWithOffset,
 } from '@/components/map/spot-marker'
+import { generatePlan } from '@/lib/itinerary/plan-generator'
 
 /**
  * ステップ3: スポット選択コンポーネント（内部実装）
@@ -63,18 +65,46 @@ function SpotSelectionContent() {
       console.log('[useEffect] プラン作成処理を開始します')
       console.log('[useEffect] 選択されたスポット数:', selectedSpots.length)
 
-      // Phase 3で以下の処理を実装予定:
-      // 1. 訪問順序の最適化
-      // 2. スポット間の移動時間取得
-      // 3. 訪問時刻の自動計算
-      // 4. 日ごとの配分
+      const createPlan = async () => {
+        try {
+          // 日程チェック
+          if (!formData.startDate || !formData.endDate) {
+            console.error('[createPlan] 日程が未設定です')
+            updateFormData({ isPreviewMode: false })
+            return
+          }
 
-      // 仮実装: optimizedSpotsに選択されたスポットをそのまま設定
-      updateFormData({ optimizedSpots: selectedSpots })
-      planCreatedRef.current = true
+          // 旅行日数を計算
+          const numberOfDays = differenceInDays(formData.endDate, formData.startDate) + 1
+          console.log(`[createPlan] 旅行日数: ${numberOfDays}日`)
 
-      // タブをマップに戻す
-      setActiveTab('map')
+          // プラン生成処理を実行
+          // 1. 訪問順序の最適化 (issue#42)
+          // 2. スポット間の移動時間取得 (issue#43)
+          // 3. 訪問時刻の自動計算 (issue#44)
+          // 4. 日ごとの配分
+          const plan = await generatePlan(selectedSpots, formData.startDate, numberOfDays)
+
+          // PlanFormContextに結果を保存
+          updateFormData({
+            optimizedSpots: plan.optimizedSpots,
+            routeInfo: plan.routeInfo,
+            timeSlots: plan.timeSlots,
+            dayPlan: plan.dayPlan,
+          })
+
+          planCreatedRef.current = true
+
+          // タブをマップに戻す
+          setActiveTab('map')
+        } catch (error) {
+          console.error('[createPlan] プラン生成に失敗しました:', error)
+          // エラー時はプレビューモードを解除
+          updateFormData({ isPreviewMode: false })
+        }
+      }
+
+      createPlan()
     }
 
     // プレビューモードを解除したらフラグをリセット
