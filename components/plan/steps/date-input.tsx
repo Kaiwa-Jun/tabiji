@@ -279,7 +279,7 @@ export function DateInputStep() {
             <div className="space-y-3">
               <div className="flex items-center justify-between">
                 <label className="text-sm font-medium text-gray-700">
-                  最終目的地 <span className="text-red-500">*</span>
+                  最終目的地<span className="text-red-500 ml-1">*</span>
                 </label>
                 <div className="flex items-center gap-2">
                   <Checkbox
@@ -290,7 +290,7 @@ export function DateInputStep() {
                   />
                   <label
                     htmlFor="same-as-start"
-                    className="text-sm text-gray-600 cursor-pointer"
+                    className="text-sm text-gray-600 cursor-pointer whitespace-nowrap"
                   >
                     出発地点と同じ
                   </label>
@@ -305,7 +305,6 @@ export function DateInputStep() {
                   value={formData.endpoints?.tripEnd || null}
                   onSelect={handleGoalPointSelect}
                   onClear={handleGoalPointClear}
-                  required
                 />
               )}
             </div>
