@@ -40,6 +40,10 @@ export interface SearchOptions {
   limit?: number
   /** 「観光地」キーワードを付けるかどうか（デフォルト: true） */
   appendTouristKeyword?: boolean
+  /** 検索の中心位置（位置ベース検索用） */
+  location?: { lat: number; lng: number }
+  /** 検索半径（メートル単位、デフォルト: 5000m = 5km） */
+  radius?: number
 }
 
 /**
@@ -82,6 +86,10 @@ export async function searchPlacesByArea(
       type: options?.type,
       language: 'ja',
       region: 'jp',
+      ...(options?.location && {
+        location: new google.maps.LatLng(options.location.lat, options.location.lng),
+      }),
+      ...(options?.radius && { radius: options.radius }),
     }
 
     console.log('[searchPlacesByArea] 🔍 APIリクエスト:', {
@@ -89,6 +97,8 @@ export async function searchPlacesByArea(
       type: options?.type,
       filterTypes: options?.types,
       limit: options?.limit || 20,
+      location: options?.location,
+      radius: options?.radius,
     })
 
     service.textSearch(request, (results, status) => {

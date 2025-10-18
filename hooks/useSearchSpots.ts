@@ -23,11 +23,16 @@ function getPlaceTypes(searchType: SearchType): string[] | undefined {
 /**
  * スポット検索フック
  * キーワード、都道府県、検索タイプでスポットを検索（300msデバウンス）
+ * @param keyword - 検索キーワード
+ * @param prefecture - 都道府県名
+ * @param searchType - 検索タイプ
+ * @param nearLocation - 検索の中心位置（位置ベース検索用、オプション）
  */
 export function useSearchSpots(
   keyword: string,
   prefecture: string | null,
-  searchType: SearchType = 'spot'
+  searchType: SearchType = 'spot',
+  nearLocation?: { lat: number; lng: number }
 ) {
   const [results, setResults] = useState<PlaceResult[]>([])
   const [isLoading, setIsLoading] = useState(false)
@@ -47,8 +52,14 @@ export function useSearchSpots(
           prefecture,
           searchType,
           types,
+          nearLocation,
         })
-        const spots = await searchSpotsByKeyword(keyword, prefecture || undefined, types)
+        const spots = await searchSpotsByKeyword(
+          keyword,
+          prefecture || undefined,
+          types,
+          nearLocation
+        )
         console.log('[useSearchSpots] ✅ 検索結果:', {
           count: spots.length,
           results: spots.slice(0, 3).map((s) => s.name),
@@ -65,7 +76,7 @@ export function useSearchSpots(
     // デバウンス処理（300ms）
     const timeoutId = setTimeout(search, 300)
     return () => clearTimeout(timeoutId)
-  }, [keyword, prefecture, searchType])
+  }, [keyword, prefecture, searchType, nearLocation])
 
   return { results, isLoading }
 }

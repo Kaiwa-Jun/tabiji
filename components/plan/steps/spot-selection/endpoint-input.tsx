@@ -21,6 +21,8 @@ interface EndpointInputProps {
   onClear: () => void
   /** 必須かどうか */
   required?: boolean
+  /** 検索の中心位置（位置ベース検索用、オプション） */
+  nearLocation?: { lat: number; lng: number }
 }
 
 /**
@@ -36,14 +38,15 @@ export function EndpointInput({
   onSelect,
   onClear,
   required = false,
+  nearLocation,
 }: EndpointInputProps) {
   const [isSearching, setIsSearching] = useState(false)
   const [keyword, setKeyword] = useState('')
   const inputRef = useRef<HTMLInputElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
 
-  // 検索結果を取得（都道府県フィルタなし）
-  const { results, isLoading } = useSearchSpots(keyword, null, searchType)
+  // 検索結果を取得（都道府県フィルタなし、位置ベース検索対応）
+  const { results, isLoading } = useSearchSpots(keyword, null, searchType, nearLocation)
 
   // 検索結果が更新されたらログ出力
   useEffect(() => {

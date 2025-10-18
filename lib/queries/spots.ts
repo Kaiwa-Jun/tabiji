@@ -7,12 +7,16 @@ import type { Region } from '@/lib/constants/areas'
  * @param keyword - 検索キーワード
  * @param prefecture - 都道府県名（オプション）
  * @param types - スポットタイプでフィルタリング（オプション）
+ * @param nearLocation - 検索の中心位置（位置ベース検索用、オプション）
+ * @param radius - 検索半径（メートル単位、デフォルト: 5000m）
  * @returns 検索結果のスポット配列
  */
 export async function searchSpotsByKeyword(
   keyword: string,
   prefecture?: string,
-  types?: string[]
+  types?: string[],
+  nearLocation?: { lat: number; lng: number },
+  radius: number = 5000
 ): Promise<PlaceResult[]> {
   if (!keyword.trim()) return []
 
@@ -56,12 +60,15 @@ export async function searchSpotsByKeyword(
       types,
       searchQuery,
       appendTouristKeyword,
+      nearLocation,
+      radius,
     })
 
     const results = await searchPlacesByArea(searchQuery, {
       limit: 20,
       types,
       appendTouristKeyword,
+      ...(nearLocation && { location: nearLocation, radius }),
     })
 
     console.log('[searchSpotsByKeyword] ✅ 検索完了:', {

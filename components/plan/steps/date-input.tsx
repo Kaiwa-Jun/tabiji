@@ -270,6 +270,11 @@ export function DateInputStep() {
                     value={formData.endpoints?.accommodations[i] || null}
                     onSelect={(place) => handleAccommodationSelect(i, place)}
                     onClear={() => handleAccommodationClear(i)}
+                    nearLocation={
+                      formData.endpoints?.tripStart
+                        ? { lat: formData.endpoints.tripStart.lat, lng: formData.endpoints.tripStart.lng }
+                        : undefined
+                    }
                   />
                 ))}
               </div>
