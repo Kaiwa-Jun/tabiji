@@ -22,6 +22,7 @@ import {
 } from '@/components/map/spot-marker'
 import { generatePlan } from '@/lib/itinerary/plan-generator'
 import { decodePolylineToLatLngs } from '@/lib/maps/polyline-decoder'
+import type { PlaceResult } from '@/lib/maps/places'
 
 /**
  * ステップ3: スポット選択コンポーネント
@@ -39,9 +40,11 @@ function SpotSelectionContent() {
   const mapRef = useRef<google.maps.Map | null>(null)
   const markersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([])
   const searchResultMarkersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([])
+  const endpointMarkersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([])
   const polylinesRef = useRef<google.maps.Polyline[]>([])
   const detailCardsRef = useRef<HTMLElement[]>([])
   const searchResultDetailCardsRef = useRef<HTMLElement[]>([])
+  const endpointDetailCardsRef = useRef<HTMLElement[]>([])
   const sheetRef = useRef<SelectedSpotsSheetRef>(null)
   const [sheetState, setSheetState] = useState<SheetState>('minimized')
   const [activeTab, setActiveTab] = useState<'map' | 'route-list'>('map')
@@ -308,6 +311,68 @@ function SpotSelectionContent() {
       searchResultDetailCardsRef.current = []
     }
   }, [searchResults, selectedSpots])
+
+  // エンドポイント（出発地・宿泊施設・目的地）を青のマーカーとして表示
+  useEffect(() => {
+    console.log('[エンドポイント表示] useEffect実行:', {
+      hasMap: !!mapRef.current,
+      endpoints: formData.endpoints,
+    })
+
+    if (!mapRef.current || !formData.endpoints) {
+      console.log('[エンドポイント表示] スキップ: マップまたはエンドポイントが未設定')
+      return
+    }
+
+    // 既存のエンドポイントマーカーをクリア
+    clearMarkers(endpointMarkersRef.current)
+
+    // エンドポイントをリストに集約
+    const endpointSpots: PlaceResult[] = []
+    if (formData.endpoints.tripStart) {
+      console.log('[エンドポイント表示] 出発地を追加:', formData.endpoints.tripStart.name)
+      endpointSpots.push(formData.endpoints.tripStart)
+    }
+    formData.endpoints.accommodations.forEach((accommodation, index) => {
+      console.log(`[エンドポイント表示] 宿泊施設${index + 1}を追加:`, accommodation.name)
+      endpointSpots.push(accommodation)
+    })
+    if (formData.endpoints.tripEnd && formData.endpoints.tripEnd !== formData.endpoints.tripStart) {
+      console.log('[エンドポイント表示] 目的地を追加:', formData.endpoints.tripEnd.name)
+      endpointSpots.push(formData.endpoints.tripEnd)
+    }
+
+    console.log('[エンドポイント表示] エンドポイント合計:', endpointSpots.length)
+
+    // エンドポイントがない場合は何もしない
+    if (endpointSpots.length === 0) {
+      console.log('[エンドポイント表示] エンドポイントが0件のため表示しない')
+      return
+    }
+
+    // 青のマーカーを追加（スポット名ラベルを表示、クリック時は何もしない）
+    console.log('[エンドポイント表示] マーカーを追加します')
+    const { markers, detailCards } = addSpotMarkers(
+      mapRef.current,
+      endpointSpots,
+      () => {
+        // エンドポイントのマーカークリック時は何もしない
+      },
+      '#3b82f6', // 青色（Tailwind blue-500相当）
+      true // スポット名ラベルを表示
+    )
+
+    console.log('[エンドポイント表示] マーカー追加完了:', markers.length)
+    endpointMarkersRef.current = markers
+    endpointDetailCardsRef.current = detailCards
+
+    // クリーンアップ
+    return () => {
+      clearMarkers(endpointMarkersRef.current)
+      endpointMarkersRef.current = []
+      endpointDetailCardsRef.current = []
+    }
+  }, [formData.endpoints])
 
   // プレビューモード時: 最適化された経路をPolylineで描画
   useEffect(() => {
