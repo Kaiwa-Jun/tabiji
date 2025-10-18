@@ -4,6 +4,7 @@
 import React from 'react'
 import { render, screen } from '@testing-library/react'
 import { PlanFormProvider } from '@/contexts/plan-form-context'
+import { SearchModalProvider } from '@/contexts/search-modal-context'
 import { SpotSelectionStep } from '@/components/plan/steps/spot-selection'
 
 // LocalStorageのモック
@@ -43,7 +44,9 @@ describe('SpotSelectionStep', () => {
     it('Google Mapコンポーネントが表示される', () => {
       render(
         <PlanFormProvider>
-          <SpotSelectionStep />
+          <SearchModalProvider>
+            <SpotSelectionStep />
+          </SearchModalProvider>
         </PlanFormProvider>
       )
 
@@ -54,7 +57,9 @@ describe('SpotSelectionStep', () => {
     it('検索バートリガーが表示される', () => {
       render(
         <PlanFormProvider>
-          <SpotSelectionStep />
+          <SearchModalProvider>
+            <SpotSelectionStep />
+          </SearchModalProvider>
         </PlanFormProvider>
       )
 
@@ -64,7 +69,9 @@ describe('SpotSelectionStep', () => {
     it('選択済みスポットのシートが表示される', () => {
       render(
         <PlanFormProvider>
-          <SpotSelectionStep />
+          <SearchModalProvider>
+            <SpotSelectionStep />
+          </SearchModalProvider>
         </PlanFormProvider>
       )
 
@@ -76,7 +83,9 @@ describe('SpotSelectionStep', () => {
     it('初期状態では選択済みスポット数が0件と表示される', () => {
       render(
         <PlanFormProvider>
-          <SpotSelectionStep />
+          <SearchModalProvider>
+            <SpotSelectionStep />
+          </SearchModalProvider>
         </PlanFormProvider>
       )
 
