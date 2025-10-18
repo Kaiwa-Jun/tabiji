@@ -6,23 +6,71 @@ import type { Region } from '@/lib/constants/areas'
  * キーワードとエリアでスポット検索
  * @param keyword - 検索キーワード
  * @param prefecture - 都道府県名（オプション）
+ * @param types - スポットタイプでフィルタリング（オプション）
  * @returns 検索結果のスポット配列
  */
 export async function searchSpotsByKeyword(
   keyword: string,
-  prefecture?: string
+  prefecture?: string,
+  types?: string[]
 ): Promise<PlaceResult[]> {
   if (!keyword.trim()) return []
 
   try {
-    // エリア指定がある場合は「都道府県名 + キーワード」で検索
-    // ない場合は「日本 + キーワード」で検索
-    const searchQuery = prefecture ? `${prefecture} ${keyword}` : `日本 ${keyword}`
+    // 駅・空港検索の場合、キーワードの強化
+    let enhancedKeyword = keyword
+    if (types && types.length > 0) {
+      // 駅・空港を検索する場合
+      const isStationSearch = types.some((type) =>
+        ['train_station', 'transit_station', 'subway_station', 'airport'].includes(type)
+      )
 
-    const results = await searchPlacesByArea(searchQuery, { limit: 20 })
+      // 宿泊施設を検索する場合
+      const isAccommodationSearch = types.some((type) =>
+        ['lodging', 'hotel', 'resort_hotel'].includes(type)
+      )
+
+      if (isStationSearch) {
+        // 駅・空港検索の場合、「駅 空港」を追加して広く検索
+        // 例: "仙台" → "仙台 駅 空港"
+        if (!keyword.includes('駅') && !keyword.includes('空港')) {
+          enhancedKeyword = `${keyword} 駅 空港`
+        }
+      } else if (isAccommodationSearch && !keyword.includes('ホテル') && !keyword.includes('旅館')) {
+        // 宿泊施設の場合、「ホテル」を追加（ただし既に含まれていない場合のみ）
+        enhancedKeyword = `${keyword}ホテル`
+      }
+    }
+
+    // エリア指定がある場合は「都道府県名 + キーワード」で検索
+    // ない場合はキーワードのみで検索（「日本」プレフィックスを削除）
+    const searchQuery = prefecture ? `${prefecture} ${enhancedKeyword}` : enhancedKeyword
+
+    // typesが指定されている場合（駅・空港・宿泊施設など）は「観光地」キーワードを付けない
+    const appendTouristKeyword = !types || types.length === 0
+
+    console.log('[searchSpotsByKeyword] 🔍 クエリ構築:', {
+      originalKeyword: keyword,
+      enhancedKeyword,
+      prefecture,
+      types,
+      searchQuery,
+      appendTouristKeyword,
+    })
+
+    const results = await searchPlacesByArea(searchQuery, {
+      limit: 20,
+      types,
+      appendTouristKeyword,
+    })
+
+    console.log('[searchSpotsByKeyword] ✅ 検索完了:', {
+      resultCount: results.length,
+    })
+
     return results
   } catch (error) {
-    console.error('[searchSpotsByKeyword] Error:', error)
+    console.error('[searchSpotsByKeyword] ❌ Error:', error)
     return []
   }
 }

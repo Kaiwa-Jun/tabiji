@@ -178,6 +178,38 @@ export interface CustomSpot {
 }
 
 /**
+ * 旅程全体のスタート/ゴール地点・宿泊先
+ */
+export interface TripEndpoints {
+  /** 旅行全体のスタート地点（駅、空港） */
+  tripStart: PlaceResult | null
+  /** 旅行全体のゴール地点（駅、空港） */
+  tripEnd: PlaceResult | null
+  /** 宿泊先リスト（n泊の場合、n個のホテル） */
+  accommodations: PlaceResult[]
+}
+
+/**
+ * 1日の旅程を表す型
+ */
+export interface DayItinerary {
+  /** 日数（1日目、2日目...） */
+  dayNumber: number
+  /** スタート地点（駅、空港、ホテル） */
+  startPoint: PlaceResult
+  /** この日に訪問するスポット */
+  spots: PlaceResult[]
+  /** ゴール地点（ホテル、駅、空港） */
+  endPoint: PlaceResult
+  /** 最適化されたルート順序（startPoint → spots → endPoint） */
+  optimizedRoute?: PlaceResult[]
+  /** ルート情報 */
+  routeInfo?: RouteInfo[]
+  /** 時刻情報 */
+  timeSlots?: Map<string, TimeSlot>
+}
+
+/**
  * プラン作成フォームのデータ
  * Context + LocalStorageで管理される状態
  */
@@ -213,6 +245,12 @@ export interface PlanFormData {
   timeSlots: Map<string, TimeSlot> | null
   /** 日ごとに配分されたスポット */
   dayPlan: Map<number, OptimizedSpot[]> | null
+
+  // スタート/ゴール地点・宿泊先
+  /** 旅程のエンドポイント情報 */
+  endpoints: TripEndpoints | null
+  /** 日ごとの旅程（最適化後） */
+  dayItineraries: DayItinerary[] | null
 
   // メタ情報
   /** 現在のステップ（1-5） */
