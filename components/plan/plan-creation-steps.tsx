@@ -7,6 +7,7 @@ import { ChevronRight, ChevronLeft } from 'lucide-react'
 import { DateInputStep } from './steps/date-input'
 import { SpotSelectionStep } from './steps/spot-selection'
 import { CompletionStep } from './steps/completion'
+import { DebugLogger } from '@/components/debug/debug-logger'
 
 /**
  * プラン作成ステップコンポーネント
@@ -119,6 +120,9 @@ export function PlanCreationSteps() {
 
   return (
     <div className="flex h-screen flex-col bg-gray-50">
+      {/* デバッグログ（開発時のみ表示） */}
+      {process.env.NODE_ENV === 'development' && <DebugLogger />}
+
       {/* ステップインジケーター（ヘッダー） */}
       <StepIndicator currentStep={formData.currentStep} />
 

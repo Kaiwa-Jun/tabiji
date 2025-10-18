@@ -4,6 +4,7 @@
  */
 
 import { PlanFormProvider } from '@/contexts/plan-form-context'
+import { SearchModalProvider } from '@/contexts/search-modal-context'
 import { PlanCreationSteps } from '@/components/plan/plan-creation-steps'
 
 /**
@@ -12,7 +13,9 @@ import { PlanCreationSteps } from '@/components/plan/plan-creation-steps'
 export default function NewPlanPage() {
   return (
     <PlanFormProvider>
-      <PlanCreationSteps />
+      <SearchModalProvider>
+        <PlanCreationSteps />
+      </SearchModalProvider>
     </PlanFormProvider>
   )
 }
