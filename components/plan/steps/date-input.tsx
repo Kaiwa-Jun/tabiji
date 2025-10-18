@@ -277,24 +277,29 @@ export function DateInputStep() {
 
             {/* 最終目的地入力 */}
             <div className="space-y-3">
-              <div className="flex items-center gap-3">
-                <Checkbox
-                  id="same-as-start"
-                  checked={sameAsStart}
-                  onCheckedChange={handleSameAsStartChange}
-                  disabled={!formData.endpoints?.tripStart}
-                />
-                <label
-                  htmlFor="same-as-start"
-                  className="text-sm font-medium text-gray-700 cursor-pointer"
-                >
-                  最終目的地を出発地点と同じにする
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-gray-700">
+                  最終目的地 <span className="text-red-500">*</span>
                 </label>
+                <div className="flex items-center gap-2">
+                  <Checkbox
+                    id="same-as-start"
+                    checked={sameAsStart}
+                    onCheckedChange={handleSameAsStartChange}
+                    disabled={!formData.endpoints?.tripStart}
+                  />
+                  <label
+                    htmlFor="same-as-start"
+                    className="text-sm text-gray-600 cursor-pointer"
+                  >
+                    出発地点と同じ
+                  </label>
+                </div>
               </div>
 
               {!sameAsStart && (
                 <EndpointInput
-                  label="最終目的地"
+                  label=""
                   placeholder="東京駅、羽田空港などを検索..."
                   searchType="station"
                   value={formData.endpoints?.tripEnd || null}
