@@ -48,6 +48,7 @@ function SpotSelectionContent() {
   const sheetRef = useRef<SelectedSpotsSheetRef>(null)
   const [sheetState, setSheetState] = useState<SheetState>('minimized')
   const [activeTab, setActiveTab] = useState<'map' | 'route-list'>('map')
+  const [isMapReady, setIsMapReady] = useState(false)
   const visibleDetailCardIndexRef = useRef<number | null>(null)
   const visibleSearchResultCardIndexRef = useRef<number | null>(null)
   const planCreatedRef = useRef<boolean>(false)
@@ -55,6 +56,8 @@ function SpotSelectionContent() {
   // マップ初期化完了時のコールバック
   const handleMapReady = useCallback((map: google.maps.Map) => {
     mapRef.current = map
+    setIsMapReady(true)
+    console.log('[handleMapReady] マップ初期化完了')
   }, [])
 
   // 選択されたスポット数をPlanFormContextに同期
@@ -315,12 +318,17 @@ function SpotSelectionContent() {
   // エンドポイント（出発地・宿泊施設・目的地）を青のマーカーとして表示
   useEffect(() => {
     console.log('[エンドポイント表示] useEffect実行:', {
+      isMapReady,
       hasMap: !!mapRef.current,
       endpoints: formData.endpoints,
     })
 
-    if (!mapRef.current || !formData.endpoints) {
-      console.log('[エンドポイント表示] スキップ: マップまたはエンドポイントが未設定')
+    if (!isMapReady || !mapRef.current || !formData.endpoints) {
+      console.log('[エンドポイント表示] スキップ:', {
+        isMapReady,
+        hasMap: !!mapRef.current,
+        hasEndpoints: !!formData.endpoints,
+      })
       return
     }
 
@@ -372,7 +380,7 @@ function SpotSelectionContent() {
       endpointMarkersRef.current = []
       endpointDetailCardsRef.current = []
     }
-  }, [formData.endpoints])
+  }, [isMapReady, formData.endpoints])
 
   // プレビューモード時: 最適化された経路をPolylineで描画
   useEffect(() => {
