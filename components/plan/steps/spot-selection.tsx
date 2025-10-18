@@ -382,10 +382,11 @@ function SpotSelectionContent() {
       })
 
       // 余白を持たせてフィット
+      // 下部に選択済みスポットシートがあるため、topを大きくして上寄りに表示
       mapRef.current.fitBounds(bounds, {
-        top: 100,
+        top: 200,  // 上部余白を大きくして上寄りに
         right: 50,
-        bottom: 100,
+        bottom: 50,
         left: 50,
       })
 
