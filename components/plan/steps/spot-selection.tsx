@@ -374,6 +374,24 @@ function SpotSelectionContent() {
     endpointMarkersRef.current = markers
     endpointDetailCardsRef.current = detailCards
 
+    // エンドポイントが表示される範囲にマップをフィット
+    if (endpointSpots.length > 0) {
+      const bounds = new google.maps.LatLngBounds()
+      endpointSpots.forEach((spot) => {
+        bounds.extend({ lat: spot.lat, lng: spot.lng })
+      })
+
+      // 余白を持たせてフィット
+      mapRef.current.fitBounds(bounds, {
+        top: 100,
+        right: 50,
+        bottom: 100,
+        left: 50,
+      })
+
+      console.log('[エンドポイント表示] マップの表示範囲を調整しました')
+    }
+
     // クリーンアップ
     return () => {
       clearMarkers(endpointMarkersRef.current)
