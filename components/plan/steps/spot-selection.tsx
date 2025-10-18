@@ -4,7 +4,7 @@ import { useRef, useEffect, useCallback, useState } from 'react'
 import { differenceInDays } from 'date-fns'
 import { GoogleMapWrapper } from '@/components/map/google-map-wrapper'
 import { JAPAN_CENTER, JAPAN_ZOOM } from '@/lib/maps/constants'
-import { SearchModalProvider, useSearchModal } from '@/contexts/search-modal-context'
+import { useSearchModal } from '@/contexts/search-modal-context'
 import { usePlanForm } from '@/contexts/plan-form-context'
 import { SearchBarTrigger } from './spot-selection/search-bar-trigger'
 import { SearchModal } from './spot-selection/search-modal'
@@ -21,10 +21,11 @@ import {
   panToMarkerWithOffset,
 } from '@/components/map/spot-marker'
 import { generatePlan } from '@/lib/itinerary/plan-generator'
+import { decodePolylineToLatLngs } from '@/lib/maps/polyline-decoder'
 
 /**
- * ステップ3: スポット選択コンポーネント（内部実装）
- * useSearchModalフックを使用するため、Provider内部に配置
+ * ステップ3: スポット選択コンポーネント
+ * useSearchModalフックを使用
  */
 function SpotSelectionContent() {
   const {
@@ -38,6 +39,7 @@ function SpotSelectionContent() {
   const mapRef = useRef<google.maps.Map | null>(null)
   const markersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([])
   const searchResultMarkersRef = useRef<google.maps.marker.AdvancedMarkerElement[]>([])
+  const polylinesRef = useRef<google.maps.Polyline[]>([])
   const detailCardsRef = useRef<HTMLElement[]>([])
   const searchResultDetailCardsRef = useRef<HTMLElement[]>([])
   const sheetRef = useRef<SelectedSpotsSheetRef>(null)
@@ -139,6 +141,9 @@ function SpotSelectionContent() {
   useEffect(() => {
     if (!mapRef.current) return
 
+    // プレビューモード時は最適化されたスポット順序を使用、通常モード時は選択順序
+    const spotsToDisplay = formData.isPreviewMode ? formData.optimizedSpots : selectedSpots
+
     const previousSpotsCount = markersRef.current.length
 
     // 既存のマーカーをクリア
@@ -147,10 +152,10 @@ function SpotSelectionContent() {
     // 新しいマーカーを追加（カスタムHTML要素を使用）
     const { markers, detailCards } = addSpotMarkers(
       mapRef.current,
-      selectedSpots,
+      spotsToDisplay,
       (spot) => {
         // マーカークリック時: 詳細カードの表示/非表示をトグル
-        const spotIndex = selectedSpots.findIndex((s) => s.placeId === spot.placeId)
+        const spotIndex = spotsToDisplay.findIndex((s) => s.placeId === spot.placeId)
         if (spotIndex !== -1) {
           // すべての詳細カードを閉じる
           detailCardsRef.current.forEach((card) => {
@@ -197,9 +202,10 @@ function SpotSelectionContent() {
     detailCardsRef.current = detailCards
 
     // 新しいスポットが追加された場合、最後に追加されたスポットにフォーカス
-    if (selectedSpots.length > previousSpotsCount) {
-      const latestSpot = selectedSpots[selectedSpots.length - 1]
-      const latestIndex = selectedSpots.length - 1
+    // ※プレビューモード時はスポットの追加はないため、通常モード時のみ実行
+    if (!formData.isPreviewMode && spotsToDisplay.length > previousSpotsCount) {
+      const latestSpot = spotsToDisplay[spotsToDisplay.length - 1]
+      const latestIndex = spotsToDisplay.length - 1
 
       // ズームレベルを設定（詳細が見えるレベル）
       mapRef.current.setZoom(16)
@@ -229,7 +235,7 @@ function SpotSelectionContent() {
       markersRef.current = []
       detailCardsRef.current = []
     }
-  }, [selectedSpots])
+  }, [selectedSpots, formData.isPreviewMode, formData.optimizedSpots])
 
   // 検索結果スポットを青のマーカーとして表示
   useEffect(() => {
@@ -303,6 +309,57 @@ function SpotSelectionContent() {
     }
   }, [searchResults, selectedSpots])
 
+  // プレビューモード時: 最適化された経路をPolylineで描画
+  useEffect(() => {
+    if (!mapRef.current || !formData.isPreviewMode || formData.routeInfo.length === 0) {
+      return
+    }
+
+    console.log('[useEffect] 経路を描画します', {
+      routeCount: formData.routeInfo.length,
+      isPreviewMode: formData.isPreviewMode,
+    })
+
+    // 既存のPolylineをクリア
+    polylinesRef.current.forEach((polyline) => polyline.setMap(null))
+    polylinesRef.current = []
+
+    // 各ルートのポリラインをデコードして描画
+    formData.routeInfo.forEach((route, index) => {
+      if (route.polyline) {
+        try {
+          // エンコードされたポリライン文字列をデコード
+          const path = decodePolylineToLatLngs(route.polyline)
+
+          // Polylineを作成
+          const polyline = new google.maps.Polyline({
+            path,
+            strokeColor: '#ef4444', // 赤色（Tailwind red-500相当）
+            strokeWeight: 4,
+            strokeOpacity: 0.8,
+            map: mapRef.current,
+          })
+
+          polylinesRef.current.push(polyline)
+
+          console.log(`[useEffect] ルート${index + 1}を描画しました`, {
+            pointCount: path.length,
+            distance: `${(route.distance / 1000).toFixed(1)}km`,
+          })
+        } catch (error) {
+          console.error(`[useEffect] ルート${index + 1}の描画に失敗しました:`, error)
+        }
+      }
+    })
+
+    // クリーンアップ: プレビューモード解除時にPolylineを削除
+    return () => {
+      console.log('[useEffect] Polylineをクリーンアップします')
+      polylinesRef.current.forEach((polyline) => polyline.setMap(null))
+      polylinesRef.current = []
+    }
+  }, [formData.isPreviewMode, formData.routeInfo])
+
   return (
     <div className="relative h-full w-full">
       {/* Google Map - 常にレンダリング（状態を保持するため） */}
@@ -350,9 +407,5 @@ function SpotSelectionContent() {
  * マップUIを画面いっぱいに表示
  */
 export function SpotSelectionStep() {
-  return (
-    <SearchModalProvider>
-      <SpotSelectionContent />
-    </SearchModalProvider>
-  )
+  return <SpotSelectionContent />
 }
