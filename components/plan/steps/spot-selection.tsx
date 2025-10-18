@@ -51,13 +51,13 @@ function SpotSelectionContent() {
   const [isMapReady, setIsMapReady] = useState(false)
   const visibleDetailCardIndexRef = useRef<number | null>(null)
   const visibleSearchResultCardIndexRef = useRef<number | null>(null)
+  const visibleEndpointCardIndexRef = useRef<number | null>(null)
   const planCreatedRef = useRef<boolean>(false)
 
   // マップ初期化完了時のコールバック
   const handleMapReady = useCallback((map: google.maps.Map) => {
     mapRef.current = map
     setIsMapReady(true)
-    console.log('[handleMapReady] マップ初期化完了')
   }, [])
 
   // 選択されたスポット数をPlanFormContextに同期
@@ -173,6 +173,11 @@ function SpotSelectionContent() {
             card.style.display = 'none'
           })
 
+          // エンドポイントの詳細カードも閉じる
+          endpointDetailCardsRef.current.forEach((card) => {
+            card.style.display = 'none'
+          })
+
           // すべてのマーカーのzIndexをリセット
           markersRef.current.forEach((marker) => {
             marker.zIndex = 1
@@ -180,11 +185,15 @@ function SpotSelectionContent() {
           searchResultMarkersRef.current.forEach((marker) => {
             marker.zIndex = 1
           })
+          endpointMarkersRef.current.forEach((marker) => {
+            marker.zIndex = 1
+          })
 
           // 同じピンをクリックした場合は非表示（トグル）
           if (visibleDetailCardIndexRef.current === spotIndex) {
             visibleDetailCardIndexRef.current = null
             visibleSearchResultCardIndexRef.current = null
+            visibleEndpointCardIndexRef.current = null
           } else {
             // 別のピンをクリックした場合は、そのピンの詳細カードを表示
             if (detailCardsRef.current[spotIndex]) {
@@ -194,6 +203,7 @@ function SpotSelectionContent() {
             }
             visibleDetailCardIndexRef.current = spotIndex
             visibleSearchResultCardIndexRef.current = null
+            visibleEndpointCardIndexRef.current = null
           }
 
           // スポットカードを中央にスクロール
@@ -276,6 +286,11 @@ function SpotSelectionContent() {
             card.style.display = 'none'
           })
 
+          // エンドポイントの詳細カードも閉じる
+          endpointDetailCardsRef.current.forEach((card) => {
+            card.style.display = 'none'
+          })
+
           // すべてのマーカーのzIndexをリセット
           searchResultMarkersRef.current.forEach((marker) => {
             marker.zIndex = 1
@@ -283,11 +298,15 @@ function SpotSelectionContent() {
           markersRef.current.forEach((marker) => {
             marker.zIndex = 1
           })
+          endpointMarkersRef.current.forEach((marker) => {
+            marker.zIndex = 1
+          })
 
           // 同じピンをクリックした場合は非表示（トグル）
           if (visibleSearchResultCardIndexRef.current === spotIndex) {
             visibleSearchResultCardIndexRef.current = null
             visibleDetailCardIndexRef.current = null
+            visibleEndpointCardIndexRef.current = null
           } else {
             // 別のピンをクリックした場合は、そのピンの詳細カードを表示
             if (detailCards[spotIndex]) {
@@ -297,6 +316,7 @@ function SpotSelectionContent() {
             }
             visibleSearchResultCardIndexRef.current = spotIndex
             visibleDetailCardIndexRef.current = null
+            visibleEndpointCardIndexRef.current = null
           }
         }
       },
@@ -317,18 +337,7 @@ function SpotSelectionContent() {
 
   // エンドポイント（出発地・宿泊施設・目的地）を青のマーカーとして表示
   useEffect(() => {
-    console.log('[エンドポイント表示] useEffect実行:', {
-      isMapReady,
-      hasMap: !!mapRef.current,
-      endpoints: formData.endpoints,
-    })
-
     if (!isMapReady || !mapRef.current || !formData.endpoints) {
-      console.log('[エンドポイント表示] スキップ:', {
-        isMapReady,
-        hasMap: !!mapRef.current,
-        hasEndpoints: !!formData.endpoints,
-      })
       return
     }
 
@@ -338,39 +347,71 @@ function SpotSelectionContent() {
     // エンドポイントをリストに集約
     const endpointSpots: PlaceResult[] = []
     if (formData.endpoints.tripStart) {
-      console.log('[エンドポイント表示] 出発地を追加:', formData.endpoints.tripStart.name)
       endpointSpots.push(formData.endpoints.tripStart)
     }
-    formData.endpoints.accommodations.forEach((accommodation, index) => {
-      console.log(`[エンドポイント表示] 宿泊施設${index + 1}を追加:`, accommodation.name)
+    formData.endpoints.accommodations.forEach((accommodation) => {
       endpointSpots.push(accommodation)
     })
     if (formData.endpoints.tripEnd && formData.endpoints.tripEnd !== formData.endpoints.tripStart) {
-      console.log('[エンドポイント表示] 目的地を追加:', formData.endpoints.tripEnd.name)
       endpointSpots.push(formData.endpoints.tripEnd)
     }
 
-    console.log('[エンドポイント表示] エンドポイント合計:', endpointSpots.length)
-
     // エンドポイントがない場合は何もしない
     if (endpointSpots.length === 0) {
-      console.log('[エンドポイント表示] エンドポイントが0件のため表示しない')
       return
     }
 
-    // 青のマーカーを追加（スポット名ラベルを表示、クリック時は何もしない）
-    console.log('[エンドポイント表示] マーカーを追加します')
+    // 青のマーカーを追加（スポット名ラベルを表示、クリック時に詳細カードを表示）
     const { markers, detailCards } = addSpotMarkers(
       mapRef.current,
       endpointSpots,
-      () => {
-        // エンドポイントのマーカークリック時は何もしない
+      (spot) => {
+        // マーカークリック時: 詳細カードの表示/非表示をトグル
+        const spotIndex = endpointSpots.findIndex((s) => s.placeId === spot.placeId)
+        if (spotIndex !== -1) {
+          // すべての詳細カード（エンドポイント、選択済み、検索結果）を閉じる
+          endpointDetailCardsRef.current.forEach((card) => {
+            card.style.display = 'none'
+          })
+          detailCardsRef.current.forEach((card) => {
+            card.style.display = 'none'
+          })
+          searchResultDetailCardsRef.current.forEach((card) => {
+            card.style.display = 'none'
+          })
+
+          // すべてのマーカーのzIndexをリセット
+          endpointMarkersRef.current.forEach((marker) => {
+            marker.zIndex = 1
+          })
+          markersRef.current.forEach((marker) => {
+            marker.zIndex = 1
+          })
+          searchResultMarkersRef.current.forEach((marker) => {
+            marker.zIndex = 1
+          })
+
+          // 同じピンをクリックした場合は非表示（トグル）
+          if (visibleEndpointCardIndexRef.current === spotIndex) {
+            visibleEndpointCardIndexRef.current = null
+          } else {
+            // 別のピンをクリックした場合は、そのピンの詳細カードを表示
+            if (endpointDetailCardsRef.current[spotIndex]) {
+              endpointDetailCardsRef.current[spotIndex].style.display = 'block'
+              // クリックされたマーカーのzIndexを最前面に
+              endpointMarkersRef.current[spotIndex].zIndex = 9999
+            }
+            visibleEndpointCardIndexRef.current = spotIndex
+          }
+          // 他のマーカータイプの可視カードIndexをリセット
+          visibleDetailCardIndexRef.current = null
+          visibleSearchResultCardIndexRef.current = null
+        }
       },
       '#3b82f6', // 青色（Tailwind blue-500相当）
       true // スポット名ラベルを表示
     )
 
-    console.log('[エンドポイント表示] マーカー追加完了:', markers.length)
     endpointMarkersRef.current = markers
     endpointDetailCardsRef.current = detailCards
 
@@ -389,8 +430,6 @@ function SpotSelectionContent() {
         bottom: 50,
         left: 50,
       })
-
-      console.log('[エンドポイント表示] マップの表示範囲を調整しました')
     }
 
     // クリーンアップ
