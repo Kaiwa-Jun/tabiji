@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import type { PlaceResult } from '@/lib/maps/places'
 import type { Tables } from '@/types/database'
+import { errorToString } from '@/lib/utils/error-handling'
 
 /**
  * スポット保存結果
@@ -82,8 +83,41 @@ export async function saveSpot(spot: PlaceResult): Promise<SaveSpotResult> {
 
     // selectErrorがある場合（レコードが見つからない以外のエラー）
     if (selectError) {
-      console.error('[saveSpot] Select error:', selectError)
-      return { data: null, error: selectError.message }
+      // 空のオブジェクト`{}`をチェック
+      let isEmptyObject = false
+      if (selectError !== null && selectError !== undefined && typeof selectError === 'object') {
+        try {
+          const errorJson = JSON.stringify(selectError)
+          isEmptyObject = errorJson === '{}'
+        } catch {
+          // シリアライズできない場合は空オブジェクトではない
+        }
+        if (!isEmptyObject) {
+          isEmptyObject = Object.keys(selectError).length === 0
+        }
+      }
+      
+      // 文字列`"{}"`のチェック
+      const isStringEmptyObject = typeof selectError === 'string' && (selectError.trim() === '{}' || selectError === '{}')
+      
+      // 空のオブジェクトまたは文字列`"{}"`の場合はnullを返す（エラーとして扱わない）
+      if (isEmptyObject || isStringEmptyObject) {
+        console.warn('[saveSpot] Empty selectError received, returning null')
+        return { data: null, error: null }
+      }
+      
+      console.error('[saveSpot] Select error:', {
+        message: selectError.message,
+        details: selectError.details,
+        hint: selectError.hint,
+        code: selectError.code,
+      })
+      const errorMessage = errorToString(selectError)
+      if (!errorMessage || errorMessage.trim() === '' || errorMessage.trim() === '{}' || errorMessage === '{}') {
+        console.warn('[saveSpot] Empty error message after conversion for selectError, returning null')
+        return { data: null, error: null }
+      }
+      return { data: null, error: errorMessage }
     }
 
     // 3. 新規作成
@@ -104,15 +138,79 @@ export async function saveSpot(spot: PlaceResult): Promise<SaveSpotResult> {
       .single()
 
     if (insertError) {
-      console.error('[saveSpot] Insert error:', insertError)
-      return { data: null, error: insertError.message }
+      // 空のオブジェクト`{}`をチェック
+      let isEmptyObject = false
+      if (insertError !== null && insertError !== undefined && typeof insertError === 'object') {
+        try {
+          const errorJson = JSON.stringify(insertError)
+          isEmptyObject = errorJson === '{}'
+        } catch {
+          // シリアライズできない場合は空オブジェクトではない
+        }
+        if (!isEmptyObject) {
+          isEmptyObject = Object.keys(insertError).length === 0
+        }
+      }
+      
+      // 文字列`"{}"`のチェック
+      const isStringEmptyObject = typeof insertError === 'string' && (insertError.trim() === '{}' || insertError === '{}')
+      
+      // 空のオブジェクトまたは文字列`"{}"`の場合はnullを返す（エラーとして扱わない）
+      if (isEmptyObject || isStringEmptyObject) {
+        console.warn('[saveSpot] Empty insertError received, returning null')
+        return { data: null, error: null }
+      }
+      
+      console.error('[saveSpot] Insert error:', {
+        message: insertError.message,
+        details: insertError.details,
+        hint: insertError.hint,
+        code: insertError.code,
+      })
+      const errorMessage = errorToString(insertError)
+      if (!errorMessage || errorMessage.trim() === '' || errorMessage.trim() === '{}' || errorMessage === '{}') {
+        console.warn('[saveSpot] Empty error message after conversion for insertError, returning null')
+        return { data: null, error: null }
+      }
+      return { data: null, error: errorMessage }
     }
 
     console.log(`[saveSpot] Successfully saved spot: ${spot.name} (ID: ${data.id})`)
     return { data, error: null }
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'スポットの保存に失敗しました'
-    console.error('[saveSpot] Unexpected error:', error)
-    return { data: null, error: message }
+    // 空のオブジェクト`{}`をチェック
+    let isEmptyObject = false
+    if (error !== null && error !== undefined && typeof error === 'object') {
+      try {
+        const errorJson = JSON.stringify(error)
+        isEmptyObject = errorJson === '{}'
+      } catch {
+        // シリアライズできない場合は空オブジェクトではない
+      }
+      if (!isEmptyObject) {
+        isEmptyObject = Object.keys(error).length === 0
+      }
+    }
+    
+    // 文字列`"{}"`のチェック
+    const isStringEmptyObject = typeof error === 'string' && (String(error).trim() === '{}' || error === '{}')
+    
+    // 空のオブジェクトまたは文字列`"{}"`の場合はnullを返す（エラーとして扱わない）
+    if (isEmptyObject || isStringEmptyObject) {
+      console.warn('[saveSpot] Empty error received, returning null')
+      return { data: null, error: null }
+    }
+    
+    console.error('[saveSpot] Unexpected error:', {
+      error,
+      errorType: typeof error,
+      message: error instanceof Error ? error.message : String(error),
+    })
+    const errorMessage = errorToString(error)
+    if (!errorMessage || errorMessage.trim() === '' || errorMessage.trim() === '{}' || errorMessage === '{}') {
+      console.warn('[saveSpot] Empty error message after conversion, returning null')
+      return { data: null, error: null }
+    }
+    return { data: null, error: errorMessage }
   }
 }
