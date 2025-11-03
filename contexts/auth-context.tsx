@@ -65,21 +65,35 @@ export function AuthProvider({ children }: AuthProviderProps) {
       })
 
       // Server Actionでユーザー登録/更新
-      const { data, error } = await registerOrUpdateUser({
+      const result = await registerOrUpdateUser({
         userId: profile.userId,
         displayName: profile.displayName,
         pictureUrl: profile.pictureUrl,
         statusMessage: profile.statusMessage,
       })
 
+      const { data, error } = result
+
+      // Server Action側で完全にバリデーション済みなので、
+      // errorがnullでなければエラーとして扱う
       if (error) {
-        console.error('[AuthContext] User registration failed:', error)
+        console.error('[AuthContext] User registration failed:', {
+          error,
+          userId: profile.userId,
+          displayName: profile.displayName,
+        })
         setUser(null)
         return
       }
 
-      console.log('[AuthContext] User data saved to DB:', data?.id)
-      setUser(data)
+      // 正常処理
+      if (data) {
+        console.log('[AuthContext] User data saved to DB:', data.id)
+        setUser(data)
+      } else {
+        console.warn('[AuthContext] No data returned from registerOrUpdateUser')
+        setUser(null)
+      }
     } catch (error) {
       console.error('[AuthContext] Failed to fetch user:', error)
       setUser(null)

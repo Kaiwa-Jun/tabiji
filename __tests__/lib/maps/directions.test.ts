@@ -335,8 +335,17 @@ describe('Directions API Wrapper', () => {
 
       const routes = await getMultipleRoutes(locations)
 
-      expect(routes).toHaveLength(1)
+      // 新しい仕様: ルートが見つからない場合でもダミーデータを追加するため、配列長は2
+      expect(routes).toHaveLength(2)
       expect(mockService.route).toHaveBeenCalledTimes(2)
+
+      // 1つ目のルートは正常なデータ
+      expect(routes[0].distance).toBe(1000)
+      expect(routes[0].duration).toBe(600)
+
+      // 2つ目のルートはダミーデータ（距離0、所要時間0）
+      expect(routes[1].distance).toBe(0)
+      expect(routes[1].duration).toBe(0)
     })
   })
 

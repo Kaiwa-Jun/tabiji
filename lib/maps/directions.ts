@@ -76,7 +76,13 @@ export async function getDirections(
             polyline: route.overview_polyline || '',
           })
         } else {
-          console.error(`[getDirections] Directions request failed: ${status}`)
+          // ZERO_RESULTSは通常の応答（ルートが見つからなかっただけ）なので警告レベル
+          if (status === google.maps.DirectionsStatus.ZERO_RESULTS) {
+            console.warn(`[getDirections] ルートが見つかりませんでした: ${status}`)
+          } else {
+            // その他のステータスは実際のエラー
+            console.error(`[getDirections] Directions request failed: ${status}`)
+          }
           resolve(null)
         }
       }
@@ -111,12 +117,26 @@ export async function getMultipleRoutes(
   const routes: RouteInfo[] = []
 
   for (let i = 0; i < locations.length - 1; i++) {
+    console.log(`[getMultipleRoutes] 区間${i + 1}/${locations.length - 1}: (${locations[i].lat}, ${locations[i].lng}) → (${locations[i + 1].lat}, ${locations[i + 1].lng})`)
+
     const route = await getDirections(locations[i], locations[i + 1], mode)
     if (route) {
       routes.push(route)
+      console.log(`[getMultipleRoutes] 区間${i + 1}: 成功 (${(route.distance / 1000).toFixed(1)}km, ${Math.round(route.duration / 60)}分)`)
+    } else {
+      console.warn(`[getMultipleRoutes] 区間${i + 1}: ルートが見つかりませんでした。ダミーデータを使用します。`)
+      // ルートが見つからない場合でもダミーデータを追加してインデックスのずれを防ぐ
+      routes.push({
+        distance: 0,
+        duration: 0,
+        startAddress: '',
+        endAddress: '',
+        polyline: '',
+      })
     }
   }
 
+  console.log(`[getMultipleRoutes] 合計${routes.length}区間のルートを取得しました`)
   return routes
 }
 

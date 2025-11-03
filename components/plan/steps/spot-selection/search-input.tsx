@@ -2,10 +2,25 @@
 
 import { useEffect, useRef } from 'react'
 import { ChevronLeft, X } from 'lucide-react'
-import { useSearchModal } from '@/contexts/search-modal-context'
+import { useSearchModal, type SearchType } from '@/contexts/search-modal-context'
+
+/**
+ * SearchTypeに応じたプレースホルダーテキストを取得
+ */
+function getPlaceholder(searchType: SearchType): string {
+  switch (searchType) {
+    case 'station':
+      return '東京駅、羽田空港などを検索...'
+    case 'accommodation':
+      return 'ホテル名、旅館名などを検索...'
+    case 'spot':
+    default:
+      return 'スポット名やキーワードを入力...'
+  }
+}
 
 export function SearchInput() {
-  const { keyword, setKeyword, closeModal, isOpen } = useSearchModal()
+  const { keyword, setKeyword, closeModal, isOpen, searchType } = useSearchModal()
   const inputRef = useRef<HTMLInputElement>(null)
 
   // モーダルが開いた時に自動的にinputにフォーカス
@@ -37,7 +52,7 @@ export function SearchInput() {
         type="text"
         value={keyword}
         onChange={(e) => setKeyword(e.target.value)}
-        placeholder="スポット名やキーワードを入力..."
+        placeholder={getPlaceholder(searchType)}
         autoFocus
         className="h-full w-full rounded-lg border-none bg-transparent pl-12 pr-12 text-base focus:outline-none focus:ring-2 focus:ring-blue-500"
       />

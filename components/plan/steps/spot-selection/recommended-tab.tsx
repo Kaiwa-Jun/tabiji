@@ -2,18 +2,21 @@
 
 import { Sparkles, Loader2 } from 'lucide-react'
 import { useSearchModal } from '@/contexts/search-modal-context'
+import { usePlanForm } from '@/contexts/plan-form-context'
 import { useRecommendedSpots } from '@/hooks/useRecommendedSpots'
 import Image from 'next/image'
 
 /**
  * おすすめタブコンポーネント
  * ハイブリッドアプローチ:
- * - 選択なし: 日本の人気観光地
- * - 選択あり: 最後に選択したスポットと同じ都道府県の人気スポット
+ * - エンドポイントあり: 出発地・宿泊施設・目的地から近い観光地
+ * - エンドポイントなしで選択あり: 最後に選択したスポットと同じ都道府県の人気スポット
+ * - どちらもなし: 日本の人気観光地
  */
 export function RecommendedTab() {
   const { selectedSpots, selectSpot } = useSearchModal()
-  const { results, isLoading } = useRecommendedSpots(selectedSpots)
+  const { formData } = usePlanForm()
+  const { results, isLoading } = useRecommendedSpots(selectedSpots, formData.endpoints)
 
   // ローディング状態
   if (isLoading) {
@@ -35,8 +38,26 @@ export function RecommendedTab() {
     )
   }
 
-  // ヘッダー表示用: 郵便番号を除去してから都道府県を抽出
+  // ヘッダー表示用
   const getDisplayArea = () => {
+    // エンドポイントがある場合
+    if (formData.endpoints && (formData.endpoints.tripStart || formData.endpoints.accommodations.length > 0 || formData.endpoints.tripEnd)) {
+      const names: string[] = []
+      if (formData.endpoints.tripStart) names.push(formData.endpoints.tripStart.name)
+      if (formData.endpoints.accommodations.length > 0) {
+        formData.endpoints.accommodations.forEach((a) => names.push(a.name))
+      }
+      if (formData.endpoints.tripEnd && formData.endpoints.tripEnd !== formData.endpoints.tripStart) {
+        names.push(formData.endpoints.tripEnd.name)
+      }
+
+      // 最初のエンドポイント名を表示
+      if (names.length > 0) {
+        return `${names[0]}周辺のおすすめスポット`
+      }
+    }
+
+    // エンドポイントがない場合: 従来のロジック
     if (selectedSpots.length === 0) {
       return '日本の人気観光スポット'
     }

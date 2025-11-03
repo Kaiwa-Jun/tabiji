@@ -34,8 +34,16 @@ export interface PlaceResult {
 export interface SearchOptions {
   /** スポットタイプでフィルタリング（例: 'tourist_attraction', 'museum'） */
   type?: string
+  /** 複数のスポットタイプでフィルタリング（検索後にフィルタリング適用） */
+  types?: string[]
   /** 取得する最大件数（デフォルト: 20） */
   limit?: number
+  /** 「観光地」キーワードを付けるかどうか（デフォルト: true） */
+  appendTouristKeyword?: boolean
+  /** 検索の中心位置（位置ベース検索用） */
+  location?: { lat: number; lng: number }
+  /** 検索半径（メートル単位、デフォルト: 5000m = 5km） */
+  radius?: number
 }
 
 /**
@@ -69,16 +77,46 @@ export async function searchPlacesByArea(
   const service = new google.maps.places.PlacesService(document.createElement('div'))
 
   return new Promise((resolve, reject) => {
+    // 「観光地」キーワードを付けるかどうか（デフォルト: true）
+    const appendTouristKeyword = options?.appendTouristKeyword ?? true
+    const query = appendTouristKeyword ? `${area} 観光地` : area
+
     const request: google.maps.places.TextSearchRequest = {
-      query: `${area} 観光地`,
+      query,
       type: options?.type,
       language: 'ja',
       region: 'jp',
+      ...(options?.location && {
+        location: new google.maps.LatLng(options.location.lat, options.location.lng),
+      }),
+      ...(options?.radius && { radius: options.radius }),
     }
 
+    console.log('[searchPlacesByArea] 🔍 APIリクエスト:', {
+      query,
+      type: options?.type,
+      filterTypes: options?.types,
+      limit: options?.limit || 20,
+      location: options?.location,
+      radius: options?.radius,
+    })
+
     service.textSearch(request, (results, status) => {
+      console.log('[searchPlacesByArea] 📡 APIレスポンス:', {
+        status,
+        rawResultsCount: results?.length || 0,
+      })
+
       if (status === google.maps.places.PlacesServiceStatus.OK && results) {
-        const places = results
+        console.log('[searchPlacesByArea] 📋 最初の3件:', {
+          results: results.slice(0, 3).map((r) => ({
+            name: r.name,
+            types: r.types,
+            address: r.formatted_address,
+          })),
+        })
+
+        let places = results
           .slice(0, options?.limit || 20)
           .map((place) => ({
             placeId: place.place_id!,
@@ -91,15 +129,33 @@ export async function searchPlacesByArea(
             types: place.types,
           }))
 
-        console.log(`[searchPlacesByArea] Found ${places.length} places in ${area}`)
+        console.log('[searchPlacesByArea] 🔧 フィルタリング前:', {
+          count: places.length,
+        })
+
+        // typesフィルタリング（指定されている場合）
+        if (options?.types && options.types.length > 0) {
+          const beforeCount = places.length
+          places = places.filter((place) =>
+            place.types?.some((type) => options.types!.includes(type))
+          )
+          console.log('[searchPlacesByArea] ✂️ フィルタリング適用:', {
+            filterTypes: options.types,
+            beforeCount,
+            afterCount: places.length,
+            filteredOut: beforeCount - places.length,
+          })
+        }
+
+        console.log(`[searchPlacesByArea] ✅ 最終結果: ${places.length}件`)
         resolve(places)
       } else if (status === google.maps.places.PlacesServiceStatus.ZERO_RESULTS) {
         // 検索結果が0件の場合は空配列を返す（エラーではない）
-        console.log(`[searchPlacesByArea] No results found for ${area}`)
+        console.log(`[searchPlacesByArea] ⚠️ No results found for query: "${query}"`)
         resolve([])
       } else {
         const error = new Error(`Places search failed: ${status}`)
-        console.error('[searchPlacesByArea] Error:', error)
+        console.error('[searchPlacesByArea] ❌ Error:', error)
         reject(error)
       }
     })

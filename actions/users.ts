@@ -1,8 +1,8 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
 import type { User, LiffUserProfile } from '@/types/user'
+import { errorToString } from '@/lib/utils/error-handling'
 
 /**
  * LIFFプロフィール情報からユーザーを登録または更新
@@ -40,11 +40,21 @@ export async function registerOrUpdateUser(
     const supabase = await createClient()
 
     // 1. 既存ユーザーを検索
-    const { data: existingUser } = await supabase
+    const { data: existingUser, error: searchError } = await supabase
       .from('users')
       .select('*')
       .eq('line_user_id', profile.userId)
       .maybeSingle()
+
+    if (searchError) {
+      console.error('[registerOrUpdateUser] Search error:', {
+        message: searchError.message,
+        details: searchError.details,
+        hint: searchError.hint,
+        code: searchError.code,
+      })
+      throw searchError
+    }
 
     if (existingUser) {
       // 2. 既存ユーザーの情報を更新
@@ -61,7 +71,12 @@ export async function registerOrUpdateUser(
         .single()
 
       if (error) {
-        console.error('[registerOrUpdateUser] Update error:', error)
+        console.error('[registerOrUpdateUser] Update error:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+        })
         throw error
       }
 
@@ -81,7 +96,12 @@ export async function registerOrUpdateUser(
         .single()
 
       if (error) {
-        console.error('[registerOrUpdateUser] Insert error:', error)
+        console.error('[registerOrUpdateUser] Insert error:', {
+          message: error.message,
+          details: error.details,
+          hint: error.hint,
+          code: error.code,
+        })
         throw error
       }
 
@@ -108,10 +128,37 @@ export async function registerOrUpdateUser(
       return { data, error: null }
     }
   } catch (error) {
-    console.error('[registerOrUpdateUser] Failed:', error)
+    // Supabaseエラーの詳細を取得
+    const supabaseError = error as { details?: string; hint?: string; code?: string }
+
+    console.error('[registerOrUpdateUser] Failed:', {
+      error,
+      errorType: typeof error,
+      errorConstructor: error?.constructor?.name,
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      // Supabaseエラーの詳細
+      details: supabaseError.details,
+      hint: supabaseError.hint,
+      code: supabaseError.code,
+    })
+
+    // エラーメッセージを文字列に変換
+    const errorMessage = errorToString(error)
+
+    // 空のエラー（空オブジェクト含む）の場合は error: null を返す
+    if (!errorMessage) {
+      console.warn('[registerOrUpdateUser] Invalid error received, treating as success')
+      return {
+        data: null,
+        error: null,
+      }
+    }
+
+    // 有効なエラーの場合はエラーメッセージを返す
     return {
       data: null,
-      error: error instanceof Error ? error.message : 'ユーザー登録に失敗しました',
+      error: errorMessage,
     }
   }
 }
@@ -164,10 +211,28 @@ export async function getUserByLineId(
 
     return { data, error: null }
   } catch (error) {
-    console.error('[getUserByLineId] Failed:', error)
+    console.error('[getUserByLineId] Failed:', {
+      error,
+      errorType: typeof error,
+      message: error instanceof Error ? error.message : String(error),
+    })
+
+    // エラーメッセージを文字列に変換
+    const errorMessage = errorToString(error)
+
+    // 空のエラー（空オブジェクト含む）の場合は error: null を返す
+    if (!errorMessage) {
+      console.warn('[getUserByLineId] Invalid error received, treating as success')
+      return {
+        data: null,
+        error: null,
+      }
+    }
+
+    // 有効なエラーの場合はエラーメッセージを返す
     return {
       data: null,
-      error: error instanceof Error ? error.message : 'ユーザー取得に失敗しました',
+      error: errorMessage,
     }
   }
 }

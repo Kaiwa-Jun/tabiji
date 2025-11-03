@@ -61,6 +61,8 @@ const initialFormData: PlanFormData = {
   dayPlan: null,
   currentStep: 1,
   isComplete: false,
+  endpoints: null,
+  dayItineraries: null,
 }
 
 /**

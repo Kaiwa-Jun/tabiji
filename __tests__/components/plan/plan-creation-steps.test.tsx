@@ -5,6 +5,7 @@ import React from 'react'
 import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { PlanFormProvider } from '@/contexts/plan-form-context'
+import { SearchModalProvider } from '@/contexts/search-modal-context'
 import { PlanCreationSteps } from '@/components/plan/plan-creation-steps'
 
 // LocalStorageのモック
@@ -44,8 +45,10 @@ describe('PlanCreationSteps', () => {
     it('ステップインジケーターが表示される', () => {
       render(
         <PlanFormProvider>
+        <SearchModalProvider>
           <PlanCreationSteps />
-        </PlanFormProvider>
+        </SearchModalProvider>
+      </PlanFormProvider>
       )
 
       expect(screen.getByText('日程')).toBeInTheDocument()
@@ -57,8 +60,10 @@ describe('PlanCreationSteps', () => {
     it('初期状態でステップ1のコンテンツが表示される', () => {
       render(
         <PlanFormProvider>
+        <SearchModalProvider>
           <PlanCreationSteps />
-        </PlanFormProvider>
+        </SearchModalProvider>
+      </PlanFormProvider>
       )
 
       expect(screen.getByText('旅行日程を選択')).toBeInTheDocument()
@@ -67,8 +72,10 @@ describe('PlanCreationSteps', () => {
     it('初期状態で次へボタンのみ表示される（戻るボタンなし）', () => {
       render(
         <PlanFormProvider>
+        <SearchModalProvider>
           <PlanCreationSteps />
-        </PlanFormProvider>
+        </SearchModalProvider>
+      </PlanFormProvider>
       )
 
       expect(screen.getByRole('button', { name: /次へ/ })).toBeInTheDocument()
@@ -95,8 +102,10 @@ describe('PlanCreationSteps', () => {
 
       render(
         <PlanFormProvider>
+        <SearchModalProvider>
           <PlanCreationSteps />
-        </PlanFormProvider>
+        </SearchModalProvider>
+      </PlanFormProvider>
       )
 
       // 次へボタンをクリック
@@ -127,8 +136,10 @@ describe('PlanCreationSteps', () => {
 
       render(
         <PlanFormProvider>
+        <SearchModalProvider>
           <PlanCreationSteps />
-        </PlanFormProvider>
+        </SearchModalProvider>
+      </PlanFormProvider>
       )
 
       // ステップ2(スポット選択)のコンテンツが表示されている
@@ -149,8 +160,10 @@ describe('PlanCreationSteps', () => {
     it('ステップ1で日程入力が表示される', () => {
       render(
         <PlanFormProvider>
+        <SearchModalProvider>
           <PlanCreationSteps />
-        </PlanFormProvider>
+        </SearchModalProvider>
+      </PlanFormProvider>
       )
 
       expect(screen.getByText('旅行日程を選択')).toBeInTheDocument()
@@ -171,13 +184,16 @@ describe('PlanCreationSteps', () => {
 
       render(
         <PlanFormProvider>
+        <SearchModalProvider>
           <PlanCreationSteps />
-        </PlanFormProvider>
+        </SearchModalProvider>
+      </PlanFormProvider>
       )
 
       // スポット選択UI要素を確認
       expect(screen.getByText('スポットを検索...')).toBeInTheDocument()
-      expect(screen.getByText('選択済みスポット')).toBeInTheDocument()
+      // 初期タブが'route-list'に変更されたため、シートは表示されない
+      expect(screen.queryByText('選択済みスポット')).not.toBeInTheDocument()
     })
 
     it('ステップ3でプレビューが表示される', () => {
@@ -197,8 +213,10 @@ describe('PlanCreationSteps', () => {
 
       render(
         <PlanFormProvider>
+        <SearchModalProvider>
           <PlanCreationSteps />
-        </PlanFormProvider>
+        </SearchModalProvider>
+      </PlanFormProvider>
       )
 
       // プレビューモードではタブUIが表示される
@@ -221,8 +239,10 @@ describe('PlanCreationSteps', () => {
 
       render(
         <PlanFormProvider>
+        <SearchModalProvider>
           <PlanCreationSteps />
-        </PlanFormProvider>
+        </SearchModalProvider>
+      </PlanFormProvider>
       )
 
       expect(screen.getByText('🎉 プラン作成完了！')).toBeInTheDocument()
@@ -233,8 +253,10 @@ describe('PlanCreationSteps', () => {
     it('ステップ1で日程が未入力の場合、次へボタンが無効', () => {
       render(
         <PlanFormProvider>
+        <SearchModalProvider>
           <PlanCreationSteps />
-        </PlanFormProvider>
+        </SearchModalProvider>
+      </PlanFormProvider>
       )
 
       const nextButton = screen.getByRole('button', { name: /次へ/ })
@@ -257,8 +279,10 @@ describe('PlanCreationSteps', () => {
 
       render(
         <PlanFormProvider>
+        <SearchModalProvider>
           <PlanCreationSteps />
-        </PlanFormProvider>
+        </SearchModalProvider>
+      </PlanFormProvider>
       )
 
       await waitFor(() => {
@@ -283,8 +307,10 @@ describe('PlanCreationSteps', () => {
 
       render(
         <PlanFormProvider>
+        <SearchModalProvider>
           <PlanCreationSteps />
-        </PlanFormProvider>
+        </SearchModalProvider>
+      </PlanFormProvider>
       )
 
       const createButton = screen.getByRole('button', { name: /プランを作成する/ })
@@ -308,8 +334,10 @@ describe('PlanCreationSteps', () => {
 
       render(
         <PlanFormProvider>
+        <SearchModalProvider>
           <PlanCreationSteps />
-        </PlanFormProvider>
+        </SearchModalProvider>
+      </PlanFormProvider>
       )
 
       const createButton = screen.getByRole('button', { name: /プランを作成する/ })
@@ -333,8 +361,10 @@ describe('PlanCreationSteps', () => {
 
       render(
         <PlanFormProvider>
+        <SearchModalProvider>
           <PlanCreationSteps />
-        </PlanFormProvider>
+        </SearchModalProvider>
+      </PlanFormProvider>
       )
 
       const saveButton = screen.getByRole('button', { name: /保存/ })
@@ -346,8 +376,10 @@ describe('PlanCreationSteps', () => {
     it('ステップ1では「次へ」と表示される', () => {
       render(
         <PlanFormProvider>
+        <SearchModalProvider>
           <PlanCreationSteps />
-        </PlanFormProvider>
+        </SearchModalProvider>
+      </PlanFormProvider>
       )
 
       expect(screen.getByRole('button', { name: /次へ/ })).toBeInTheDocument()
@@ -369,8 +401,10 @@ describe('PlanCreationSteps', () => {
 
       render(
         <PlanFormProvider>
+        <SearchModalProvider>
           <PlanCreationSteps />
-        </PlanFormProvider>
+        </SearchModalProvider>
+      </PlanFormProvider>
       )
 
       expect(screen.getByRole('button', { name: /プランを作成する/ })).toBeInTheDocument()
@@ -393,8 +427,10 @@ describe('PlanCreationSteps', () => {
 
       render(
         <PlanFormProvider>
+        <SearchModalProvider>
           <PlanCreationSteps />
-        </PlanFormProvider>
+        </SearchModalProvider>
+      </PlanFormProvider>
       )
 
       expect(screen.getByRole('button', { name: /保存/ })).toBeInTheDocument()
@@ -415,8 +451,10 @@ describe('PlanCreationSteps', () => {
 
       render(
         <PlanFormProvider>
+        <SearchModalProvider>
           <PlanCreationSteps />
-        </PlanFormProvider>
+        </SearchModalProvider>
+      </PlanFormProvider>
       )
 
       expect(screen.queryByRole('button', { name: /次へ/ })).not.toBeInTheDocument()
@@ -429,8 +467,10 @@ describe('PlanCreationSteps', () => {
     it('ステップ1では戻るボタンが非表示、次へボタンのみ表示', () => {
       render(
         <PlanFormProvider>
+        <SearchModalProvider>
           <PlanCreationSteps />
-        </PlanFormProvider>
+        </SearchModalProvider>
+      </PlanFormProvider>
       )
 
       expect(screen.queryByRole('button', { name: /戻る/ })).not.toBeInTheDocument()
@@ -453,8 +493,10 @@ describe('PlanCreationSteps', () => {
 
       render(
         <PlanFormProvider>
+        <SearchModalProvider>
           <PlanCreationSteps />
-        </PlanFormProvider>
+        </SearchModalProvider>
+      </PlanFormProvider>
       )
 
       expect(screen.getByRole('button', { name: /戻る/ })).toBeInTheDocument()
@@ -478,8 +520,10 @@ describe('PlanCreationSteps', () => {
 
       render(
         <PlanFormProvider>
+        <SearchModalProvider>
           <PlanCreationSteps />
-        </PlanFormProvider>
+        </SearchModalProvider>
+      </PlanFormProvider>
       )
 
       expect(screen.getByRole('button', { name: /戻る/ })).toBeInTheDocument()

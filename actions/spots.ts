@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server'
 import type { PlaceResult } from '@/lib/maps/places'
 import type { Tables } from '@/types/database'
+import { errorToString, isValidError } from '@/lib/utils/error-handling'
 
 /**
  * スポット保存結果
@@ -81,9 +82,10 @@ export async function saveSpot(spot: PlaceResult): Promise<SaveSpotResult> {
     }
 
     // selectErrorがある場合（レコードが見つからない以外のエラー）
-    if (selectError) {
+    if (selectError && isValidError(selectError)) {
       console.error('[saveSpot] Select error:', selectError)
-      return { data: null, error: selectError.message }
+      const errorMessage = errorToString(selectError)
+      return { data: null, error: errorMessage }
     }
 
     // 3. 新規作成
@@ -103,16 +105,27 @@ export async function saveSpot(spot: PlaceResult): Promise<SaveSpotResult> {
       .select()
       .single()
 
-    if (insertError) {
+    if (insertError && isValidError(insertError)) {
       console.error('[saveSpot] Insert error:', insertError)
-      return { data: null, error: insertError.message }
+      const errorMessage = errorToString(insertError)
+      return { data: null, error: errorMessage }
+    }
+
+    if (!data) {
+      console.error('[saveSpot] No data returned from insert')
+      return { data: null, error: 'スポットの保存に失敗しました' }
     }
 
     console.log(`[saveSpot] Successfully saved spot: ${spot.name} (ID: ${data.id})`)
     return { data, error: null }
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'スポットの保存に失敗しました'
     console.error('[saveSpot] Unexpected error:', error)
-    return { data: null, error: message }
+
+    const errorMessage = errorToString(error)
+    if (!isValidError(error)) {
+      return { data: null, error: null }
+    }
+
+    return { data: null, error: errorMessage }
   }
 }

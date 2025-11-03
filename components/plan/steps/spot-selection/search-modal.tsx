@@ -19,10 +19,11 @@ export function SearchModal() {
     keyword,
     selectedRegion,
     selectedPrefecture,
+    searchType,
     selectSpot,
     setSearchResults,
   } = useSearchModal()
-  const { results, isLoading } = useSearchSpots(keyword, selectedPrefecture)
+  const { results, isLoading } = useSearchSpots(keyword, selectedPrefecture, searchType)
   const {
     results: areaResults,
     isLoading: areaLoading,
