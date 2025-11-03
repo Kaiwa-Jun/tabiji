@@ -31,18 +31,18 @@ export function TabSwitcher({ activeTab, onTabChange }: TabSwitcherProps) {
           >
             <TabsList className="grid w-full grid-cols-2 bg-white shadow-lg">
               <TabsTrigger
-                value="map"
-                className="gap-2 data-[state=active]:bg-green-500 data-[state=active]:text-white data-[state=active]:shadow-md"
-              >
-                <Map className="h-4 w-4" />
-                マップ
-              </TabsTrigger>
-              <TabsTrigger
                 value="route-list"
                 className="gap-2 data-[state=active]:bg-green-500 data-[state=active]:text-white data-[state=active]:shadow-md"
               >
                 <List className="h-4 w-4" />
                 旅程リスト
+              </TabsTrigger>
+              <TabsTrigger
+                value="map"
+                className="gap-2 data-[state=active]:bg-green-500 data-[state=active]:text-white data-[state=active]:shadow-md"
+              >
+                <Map className="h-4 w-4" />
+                マップ
               </TabsTrigger>
             </TabsList>
           </Tabs>

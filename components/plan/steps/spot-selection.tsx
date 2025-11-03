@@ -49,7 +49,7 @@ function SpotSelectionContent() {
   const endpointDetailCardsRef = useRef<HTMLElement[]>([])
   const sheetRef = useRef<SelectedSpotsSheetRef>(null)
   const [sheetState, setSheetState] = useState<SheetState>('minimized')
-  const [activeTab, setActiveTab] = useState<'map' | 'route-list'>('map')
+  const [activeTab, setActiveTab] = useState<'map' | 'route-list'>('route-list')
   const [isMapReady, setIsMapReady] = useState(false)
   const visibleDetailCardIndexRef = useRef<number | null>(null)
   const visibleSearchResultCardIndexRef = useRef<number | null>(null)
@@ -141,8 +141,8 @@ function SpotSelectionContent() {
 
           planCreatedRef.current = true
 
-          // タブをマップに戻す
-          setActiveTab('map')
+          // タブを旅程リストに設定（プラン作成後は旅程リストを表示）
+          setActiveTab('route-list')
         } catch (error) {
           console.error('[createPlan] プラン生成に失敗しました:', error)
           // エラー時はプレビューモードを解除

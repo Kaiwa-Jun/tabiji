@@ -66,7 +66,7 @@ describe('SpotSelectionStep', () => {
       expect(screen.getByText('スポットを検索...')).toBeInTheDocument()
     })
 
-    it('選択済みスポットのシートが表示される', () => {
+    it('通常モードでは選択済みスポットのシートは初期状態では表示されない', () => {
       render(
         <PlanFormProvider>
           <SearchModalProvider>
@@ -75,12 +75,13 @@ describe('SpotSelectionStep', () => {
         </PlanFormProvider>
       )
 
-      expect(screen.getByText('選択済みスポット')).toBeInTheDocument()
+      // 初期タブが'route-list'に変更されたため、シートは表示されない
+      expect(screen.queryByText('選択済みスポット')).not.toBeInTheDocument()
     })
   })
 
   describe('スポット数の表示', () => {
-    it('初期状態では選択済みスポット数が0件と表示される', () => {
+    it('初期状態では選択済みスポットのシートは表示されない', () => {
       render(
         <PlanFormProvider>
           <SearchModalProvider>
@@ -89,8 +90,9 @@ describe('SpotSelectionStep', () => {
         </PlanFormProvider>
       )
 
-      expect(screen.getByText('選択済みスポット')).toBeInTheDocument()
-      expect(screen.getByText('0件')).toBeInTheDocument()
+      // 初期タブが'route-list'のため、シートは表示されない
+      expect(screen.queryByText('選択済みスポット')).not.toBeInTheDocument()
+      expect(screen.queryByText('0件')).not.toBeInTheDocument()
     })
   })
 })
