@@ -192,8 +192,8 @@ describe('PlanCreationSteps', () => {
 
       // スポット選択UI要素を確認
       expect(screen.getByText('スポットを検索...')).toBeInTheDocument()
-      // 初期タブが'route-list'に変更されたため、シートは表示されない
-      expect(screen.queryByText('選択済みスポット')).not.toBeInTheDocument()
+      // 通常モード時はシートが常に表示される
+      expect(screen.getByText('選択済みスポット')).toBeInTheDocument()
     })
 
     it('ステップ3でプレビューが表示される', () => {

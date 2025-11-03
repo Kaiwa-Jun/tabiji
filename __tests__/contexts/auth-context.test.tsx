@@ -161,11 +161,14 @@ describe('AuthContext', () => {
 
       expect(result.current.user).toBeNull()
       expect(result.current.isLoading).toBe(false)
-      // 新しいエラーログ形式: オブジェクトで詳細情報を出力
+      // 新しいエラーログ形式: エラーとユーザー情報を分けて出力
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         '[AuthContext] User registration failed:',
+        'Database error'
+      )
+      expect(consoleErrorSpy).toHaveBeenCalledWith(
+        '[AuthContext] User info:',
         expect.objectContaining({
-          error: 'Database error',
           userId: 'U1234567890abcdef',
           displayName: 'テストユーザー',
         })

@@ -77,8 +77,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Server Action側で完全にバリデーション済みなので、
       // errorがnullでなければエラーとして扱う
       if (error) {
-        console.error('[AuthContext] User registration failed:', {
-          error,
+        console.error('[AuthContext] User registration failed:', error)
+        console.error('[AuthContext] User info:', {
           userId: profile.userId,
           displayName: profile.displayName,
         })
