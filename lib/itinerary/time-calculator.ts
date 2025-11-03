@@ -18,18 +18,21 @@ export interface TimeSlot {
 /**
  * 時刻を「HH:MM」形式にフォーマット
  *
- * @param date - Date オブジェクト
+ * @param date - Date オブジェクトまたはISO文字列
  * @returns フォーマット済み時刻文字列（例: "09:30"）
  *
  * @example
  * ```typescript
  * const date = new Date('2025-04-01T09:30:00')
  * formatTime(date) // "09:30"
+ * formatTime('2025-04-01T09:30:00') // "09:30"
  * ```
  */
-export function formatTime(date: Date): string {
-  const hours = date.getHours().toString().padStart(2, '0')
-  const minutes = date.getMinutes().toString().padStart(2, '0')
+export function formatTime(date: Date | string): string {
+  // 文字列の場合はDate型に変換
+  const dateObj = typeof date === 'string' ? new Date(date) : date
+  const hours = dateObj.getHours().toString().padStart(2, '0')
+  const minutes = dateObj.getMinutes().toString().padStart(2, '0')
   return `${hours}:${minutes}`
 }
 

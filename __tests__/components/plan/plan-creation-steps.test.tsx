@@ -8,6 +8,26 @@ import { PlanFormProvider } from '@/contexts/plan-form-context'
 import { SearchModalProvider } from '@/contexts/search-modal-context'
 import { PlanCreationSteps } from '@/components/plan/plan-creation-steps'
 
+// Server Actionsをモック化
+jest.mock('@/actions/plans', () => ({
+  savePlan: jest.fn(),
+}))
+
+// next/navigationをモック化
+jest.mock('next/navigation', () => ({
+  useRouter: jest.fn(() => ({
+    push: jest.fn(),
+    refresh: jest.fn(),
+  })),
+}))
+
+// LIFF Clientをモック化
+jest.mock('@/lib/liff/client', () => ({
+  liffClient: {
+    getProfile: jest.fn(() => Promise.resolve({ userId: 'mock-line-user-id' })),
+  },
+}))
+
 // LocalStorageのモック
 const localStorageMock = (() => {
   let store: Record<string, string> = {}
