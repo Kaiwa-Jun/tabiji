@@ -176,7 +176,7 @@ export const SelectedSpotsSheet = forwardRef<SelectedSpotsSheetRef, SelectedSpot
   }
 
   // プレビューモード時はspotsWithDaysを使用、それ以外はspotsを使用
-  const displaySpots = isPreviewMode && spotsWithDays ? spotsWithDays : spots.map(spot => ({ spot }))
+  const displaySpots: SpotWithDay[] = isPreviewMode && spotsWithDays ? spotsWithDays : spots.map(spot => ({ spot }))
   const totalSpotsCount = displaySpots.length
 
   // スクロールイベント: 中央のスポットを検知
