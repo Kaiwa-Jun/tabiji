@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef, useEffect, useCallback, useState } from 'react'
+import { useRef, useEffect, useCallback, useState, useMemo } from 'react'
 import { differenceInDays } from 'date-fns'
 import { GoogleMapWrapper } from '@/components/map/google-map-wrapper'
 import { JAPAN_CENTER, JAPAN_ZOOM } from '@/lib/maps/constants'
@@ -21,8 +21,10 @@ import {
   panToMarkerWithOffset,
 } from '@/components/map/spot-marker'
 import { generatePlan } from '@/lib/itinerary/plan-generator'
+import { generatePlanWithEndpoints } from '@/lib/itinerary/plan-generator-with-endpoints'
 import { decodePolylineToLatLngs } from '@/lib/maps/polyline-decoder'
 import type { PlaceResult } from '@/lib/maps/places'
+import { debugLog } from '@/lib/debug-logger'
 
 /**
  * ステップ3: スポット選択コンポーネント
@@ -53,6 +55,8 @@ function SpotSelectionContent() {
   const visibleSearchResultCardIndexRef = useRef<number | null>(null)
   const visibleEndpointCardIndexRef = useRef<number | null>(null)
   const planCreatedRef = useRef<boolean>(false)
+  const selectedDayIndexRef = useRef<number | null>(null) // 選択された日のインデックス
+  const polylineDayMapRef = useRef<number[]>([]) // 各Polylineがどの日に属するかのマップ
 
   // マップ初期化完了時のコールバック
   const handleMapReady = useCallback((map: google.maps.Map) => {
@@ -87,19 +91,53 @@ function SpotSelectionContent() {
           console.log(`[createPlan] 旅行日数: ${numberOfDays}日`)
 
           // プラン生成処理を実行
-          // 1. 訪問順序の最適化 (issue#42)
-          // 2. スポット間の移動時間取得 (issue#43)
-          // 3. 訪問時刻の自動計算 (issue#44)
-          // 4. 日ごとの配分
-          const plan = await generatePlan(selectedSpots, formData.startDate, numberOfDays)
+          // エンドポイントの有無で処理を分岐
+          if (
+            formData.endpoints &&
+            (formData.endpoints.tripStart ||
+              formData.endpoints.accommodations.length > 0 ||
+              formData.endpoints.tripEnd)
+          ) {
+            console.log('[createPlan] エンドポイント対応版プラン生成を実行')
+            // エンドポイント対応版
+            // 1. 各日のスタート/ゴールを考慮した訪問順序の最適化
+            // 2. スポット間の移動時間取得
+            // 3. 訪問時刻の自動計算
+            // 4. 日ごとの旅程生成
+            const plan = await generatePlanWithEndpoints(
+              selectedSpots,
+              formData.startDate,
+              numberOfDays,
+              formData.endpoints
+            )
 
-          // PlanFormContextに結果を保存
-          updateFormData({
-            optimizedSpots: plan.optimizedSpots,
-            routeInfo: plan.routeInfo,
-            timeSlots: plan.timeSlots,
-            dayPlan: plan.dayPlan,
-          })
+            // PlanFormContextに結果を保存
+            updateFormData({
+              dayItineraries: plan.dayItineraries,
+              // 互換性のため既存フィールドも保持
+              optimizedSpots: plan.dayItineraries.flatMap((day) => day.spots),
+              routeInfo: plan.dayItineraries.flatMap((day) => day.routeInfo || []),
+              timeSlots: mergeDayTimeSlots(plan.dayItineraries),
+              dayPlan: null, // dayItinerariesを使用するため不要
+            })
+          } else {
+            console.log('[createPlan] 従来版プラン生成を実行')
+            // 従来版（エンドポイントなし）
+            // 1. 訪問順序の最適化 (issue#42)
+            // 2. スポット間の移動時間取得 (issue#43)
+            // 3. 訪問時刻の自動計算 (issue#44)
+            // 4. 日ごとの配分
+            const plan = await generatePlan(selectedSpots, formData.startDate, numberOfDays)
+
+            // PlanFormContextに結果を保存
+            updateFormData({
+              optimizedSpots: plan.optimizedSpots,
+              routeInfo: plan.routeInfo,
+              timeSlots: plan.timeSlots,
+              dayPlan: plan.dayPlan,
+              dayItineraries: null, // エンドポイントなしの場合は不要
+            })
+          }
 
           planCreatedRef.current = true
 
@@ -122,12 +160,176 @@ function SpotSelectionContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [formData.isPreviewMode, selectedSpots])
 
+  // プレビューモード時に日ごとのスポット順序を計算
+  const spotsWithDays = useMemo(() => {
+    if (!formData.isPreviewMode) {
+      return undefined
+    }
+
+    // エンドポイント対応版の場合
+    if (formData.dayItineraries && formData.dayItineraries.length > 0) {
+      const result: Array<{ spot: PlaceResult; dayNumber: number }> = []
+      
+      formData.dayItineraries.forEach((dayItinerary) => {
+        // 各日のスポットを訪問順に追加（エンドポイントは除外）
+        dayItinerary.spots.forEach((spot) => {
+          result.push({
+            spot,
+            dayNumber: dayItinerary.dayNumber,
+          })
+        })
+      })
+
+      debugLog('エンドポイント対応版で計算', {
+        tag: 'spotsWithDays',
+        data: {
+          totalSpots: result.length,
+          selectedSpotsCount: selectedSpots.length,
+          selectedSpots: selectedSpots.map((spot, idx) => ({
+            index: idx,
+            name: spot.name,
+            placeId: spot.placeId,
+          })),
+          dayItineraries: formData.dayItineraries.map((day) => ({
+            dayNumber: day.dayNumber,
+            spotsCount: day.spots.length,
+            spots: day.spots.map((spot) => ({
+              name: spot.name,
+              placeId: spot.placeId,
+            })),
+            startPoint: day.startPoint?.name,
+            endPoint: day.endPoint?.name,
+          })),
+          spots: result.map((item, idx) => ({
+            index: idx,
+            name: item.spot.name,
+            dayNumber: item.dayNumber,
+            placeId: item.spot.placeId,
+          })),
+        },
+      })
+
+      return result
+    }
+
+    // 従来版の場合（dayPlanを使用）
+    if (formData.dayPlan && formData.dayPlan.size > 0) {
+      const result: Array<{ spot: PlaceResult; dayNumber: number }> = []
+      
+      // dayPlanは日付順にソートされていると仮定
+      const sortedDays = Array.from(formData.dayPlan.entries()).sort((a, b) => a[0] - b[0])
+      
+      sortedDays.forEach(([dayNumber, optimizedSpots]) => {
+        // optimizedSpotsからPlaceResultを取得
+        optimizedSpots.forEach((optimizedSpot) => {
+          const placeResult = formData.optimizedSpots?.find(
+            (spot) => spot.placeId === optimizedSpot.id
+          )
+          if (placeResult) {
+            result.push({
+              spot: placeResult,
+              dayNumber,
+            })
+          }
+        })
+      })
+
+      debugLog('従来版で計算', {
+        tag: 'spotsWithDays',
+        data: {
+          totalSpots: result.length,
+          spots: result.map((item, idx) => ({
+            index: idx,
+            name: item.spot.name,
+            dayNumber: item.dayNumber,
+            placeId: item.spot.placeId,
+          })),
+        },
+      })
+
+      return result
+    }
+
+    // フォールバック: optimizedSpotsを使用（日付情報なし）
+    if (formData.optimizedSpots && formData.optimizedSpots.length > 0) {
+      const result = formData.optimizedSpots.map((spot) => ({
+        spot,
+        dayNumber: undefined,
+      }))
+      debugLog('フォールバック版で計算', {
+        tag: 'spotsWithDays',
+        data: {
+          totalSpots: result.length,
+          spots: result.map((item, idx) => ({
+            index: idx,
+            name: item.spot.name,
+            dayNumber: item.dayNumber,
+            placeId: item.spot.placeId,
+          })),
+        },
+      })
+      return result
+    }
+
+    return undefined
+  }, [
+    formData.isPreviewMode,
+    formData.dayItineraries,
+    formData.dayPlan,
+    formData.optimizedSpots,
+  ])
+
   // スポットカードのスクロール時に対応するピンを中央に表示
   const handleSpotChange = useCallback(
     (index: number) => {
-      if (!mapRef.current || !selectedSpots[index]) return
+      if (!mapRef.current) return
 
-      const spot = selectedSpots[index]
+      debugLog('呼び出されました', {
+        tag: 'handleSpotChange',
+        data: {
+          index,
+          isPreviewMode: formData.isPreviewMode,
+          spotsWithDaysLength: spotsWithDays?.length,
+          selectedSpotsLength: selectedSpots.length,
+        },
+      })
+
+      // プレビューモード時はspotsWithDaysからスポットを取得、通常モード時はselectedSpotsから取得
+      let spot: PlaceResult | undefined
+      
+      if (formData.isPreviewMode && spotsWithDays && index < spotsWithDays.length) {
+        // プレビューモード: spotsWithDaysから取得
+        spot = spotsWithDays[index].spot
+        debugLog('プレビューモード: spotsWithDaysから取得', {
+          tag: 'handleSpotChange',
+          data: {
+            index,
+            spotName: spot.name,
+            spotPlaceId: spot.placeId,
+            dayNumber: spotsWithDays[index].dayNumber,
+          },
+        })
+      } else if (index < selectedSpots.length) {
+        // 通常モード: selectedSpotsから取得
+        spot = selectedSpots[index]
+        debugLog('通常モード: selectedSpotsから取得', {
+          tag: 'handleSpotChange',
+          data: {
+            index,
+            spotName: spot.name,
+            spotPlaceId: spot.placeId,
+          },
+        })
+      }
+
+      if (!spot) {
+        debugLog('スポットが見つかりませんでした', {
+          tag: 'handleSpotChange',
+          level: 'warn',
+          data: { index },
+        })
+        return
+      }
 
       // スポットカードスワイプ時は詳細カードを表示しない
       // ピンクリック時のみ詳細カードを表示する仕様のため、
@@ -138,17 +340,54 @@ function SpotSelectionContent() {
       // expanded（展開）: 30px（シートが高いため、オフセットを小さくしてピンを上に表示）
       // minimized（最小化）: 100px（通常のオフセット）
       const offset = sheetState === 'expanded' ? 30 : 100
+      debugLog('マップを移動', {
+        tag: 'handleSpotChange',
+        data: {
+          spotName: spot.name,
+          lat: spot.lat,
+          lng: spot.lng,
+          offset,
+        },
+      })
       panToMarkerWithOffset(mapRef.current, spot.lat, spot.lng, offset)
     },
-    [selectedSpots, sheetState]
+    [selectedSpots, sheetState, formData.isPreviewMode, spotsWithDays]
   )
 
   // 選択されたスポットをカスタムデザインのマーカーとして表示
   useEffect(() => {
     if (!mapRef.current) return
 
-    // プレビューモード時は最適化されたスポット順序を使用、通常モード時は選択順序
-    const spotsToDisplay = formData.isPreviewMode ? formData.optimizedSpots : selectedSpots
+    // プレビューモード時はspotsWithDaysからスポットを抽出して使用、通常モード時は選択順序
+    // spotsWithDaysは日ごとにグループ化された順序で、プラン候補の表示順序と一致している
+    const spotsToDisplay = formData.isPreviewMode && spotsWithDays
+      ? spotsWithDays.map(item => item.spot)
+      : selectedSpots
+
+    debugLog('spotsToDisplay vs spotsWithDays 比較', {
+      tag: 'マーカー表示',
+      data: {
+        isPreviewMode: formData.isPreviewMode,
+        spotsToDisplayCount: spotsToDisplay.length,
+        spotsWithDaysCount: spotsWithDays?.length || 0,
+        spotsToDisplay: spotsToDisplay.map((spot, idx) => ({
+          index: idx,
+          name: spot.name,
+          placeId: spot.placeId,
+        })),
+        spotsWithDays: spotsWithDays?.map((item, idx) => ({
+          index: idx,
+          name: item.spot.name,
+          placeId: item.spot.placeId,
+          dayNumber: item.dayNumber,
+        })) || [],
+        // 順序の比較
+        orderMatch: spotsWithDays ? spotsToDisplay.every((spot, idx) => {
+          const corresponding = spotsWithDays[idx]
+          return corresponding && spot.placeId === corresponding.spot.placeId
+        }) : true,
+      },
+    })
 
     const previousSpotsCount = markersRef.current.length
 
@@ -251,7 +490,7 @@ function SpotSelectionContent() {
       markersRef.current = []
       detailCardsRef.current = []
     }
-  }, [selectedSpots, formData.isPreviewMode, formData.optimizedSpots])
+  }, [selectedSpots, formData.isPreviewMode, spotsWithDays])
 
   // 検索結果スポットを青のマーカーとして表示
   useEffect(() => {
@@ -335,7 +574,7 @@ function SpotSelectionContent() {
     }
   }, [searchResults, selectedSpots])
 
-  // エンドポイント（出発地・宿泊施設・目的地）を青のマーカーとして表示
+  // エンドポイント（出発地・宿泊施設・目的地）を色分けして表示
   useEffect(() => {
     if (!isMapReady || !mapRef.current || !formData.endpoints) {
       return
@@ -343,33 +582,21 @@ function SpotSelectionContent() {
 
     // 既存のエンドポイントマーカーをクリア
     clearMarkers(endpointMarkersRef.current)
+    endpointMarkersRef.current = []
+    endpointDetailCardsRef.current = []
 
-    // エンドポイントをリストに集約
-    const endpointSpots: PlaceResult[] = []
+    const allMarkers: google.maps.marker.AdvancedMarkerElement[] = []
+    const allDetailCards: HTMLElement[] = []
+    let currentIndex = 0
+
+    // 1. 出発地を緑で表示
     if (formData.endpoints.tripStart) {
-      endpointSpots.push(formData.endpoints.tripStart)
-    }
-    formData.endpoints.accommodations.forEach((accommodation) => {
-      endpointSpots.push(accommodation)
-    })
-    if (formData.endpoints.tripEnd && formData.endpoints.tripEnd !== formData.endpoints.tripStart) {
-      endpointSpots.push(formData.endpoints.tripEnd)
-    }
-
-    // エンドポイントがない場合は何もしない
-    if (endpointSpots.length === 0) {
-      return
-    }
-
-    // 青のマーカーを追加（スポット名ラベルを表示、クリック時に詳細カードを表示）
-    const { markers, detailCards } = addSpotMarkers(
-      mapRef.current,
-      endpointSpots,
-      (spot) => {
-        // マーカークリック時: 詳細カードの表示/非表示をトグル
-        const spotIndex = endpointSpots.findIndex((s) => s.placeId === spot.placeId)
-        if (spotIndex !== -1) {
-          // すべての詳細カード（エンドポイント、選択済み、検索結果）を閉じる
+      const spotIndex = currentIndex
+      const { markers, detailCards } = addSpotMarkers(
+        mapRef.current,
+        [formData.endpoints.tripStart],
+        (spot) => {
+          // すべての詳細カードを閉じる
           endpointDetailCardsRef.current.forEach((card) => {
             card.style.display = 'none'
           })
@@ -398,29 +625,149 @@ function SpotSelectionContent() {
             // 別のピンをクリックした場合は、そのピンの詳細カードを表示
             if (endpointDetailCardsRef.current[spotIndex]) {
               endpointDetailCardsRef.current[spotIndex].style.display = 'block'
-              // クリックされたマーカーのzIndexを最前面に
               endpointMarkersRef.current[spotIndex].zIndex = 9999
             }
             visibleEndpointCardIndexRef.current = spotIndex
           }
-          // 他のマーカータイプの可視カードIndexをリセット
           visibleDetailCardIndexRef.current = null
           visibleSearchResultCardIndexRef.current = null
-        }
-      },
-      '#3b82f6', // 青色（Tailwind blue-500相当）
-      true // スポット名ラベルを表示
-    )
 
-    endpointMarkersRef.current = markers
-    endpointDetailCardsRef.current = detailCards
+          // マップを対応する位置に移動
+          panToMarkerWithOffset(mapRef.current!, spot.lat, spot.lng, 100)
+        },
+        '#10b981', // 緑（Tailwind green-500）
+        true
+      )
+      allMarkers.push(...markers)
+      allDetailCards.push(...detailCards)
+      currentIndex++
+    }
+
+    // 2. 宿泊施設を青で表示
+    formData.endpoints.accommodations.forEach((accommodation) => {
+      const spotIndex = currentIndex
+      const { markers, detailCards } = addSpotMarkers(
+        mapRef.current!,
+        [accommodation],
+        (spot) => {
+          // すべての詳細カードを閉じる
+          endpointDetailCardsRef.current.forEach((card) => {
+            card.style.display = 'none'
+          })
+          detailCardsRef.current.forEach((card) => {
+            card.style.display = 'none'
+          })
+          searchResultDetailCardsRef.current.forEach((card) => {
+            card.style.display = 'none'
+          })
+
+          // すべてのマーカーのzIndexをリセット
+          endpointMarkersRef.current.forEach((marker) => {
+            marker.zIndex = 1
+          })
+          markersRef.current.forEach((marker) => {
+            marker.zIndex = 1
+          })
+          searchResultMarkersRef.current.forEach((marker) => {
+            marker.zIndex = 1
+          })
+
+          // 同じピンをクリックした場合は非表示（トグル）
+          if (visibleEndpointCardIndexRef.current === spotIndex) {
+            visibleEndpointCardIndexRef.current = null
+          } else {
+            // 別のピンをクリックした場合は、そのピンの詳細カードを表示
+            if (endpointDetailCardsRef.current[spotIndex]) {
+              endpointDetailCardsRef.current[spotIndex].style.display = 'block'
+              endpointMarkersRef.current[spotIndex].zIndex = 9999
+            }
+            visibleEndpointCardIndexRef.current = spotIndex
+          }
+          visibleDetailCardIndexRef.current = null
+          visibleSearchResultCardIndexRef.current = null
+
+          // マップを対応する位置に移動
+          panToMarkerWithOffset(mapRef.current!, spot.lat, spot.lng, 100)
+        },
+        '#3b82f6', // 青（Tailwind blue-500）
+        true
+      )
+      allMarkers.push(...markers)
+      allDetailCards.push(...detailCards)
+      currentIndex++
+    })
+
+    // 3. 目的地を赤で表示（出発地と異なる場合のみ）
+    if (formData.endpoints.tripEnd && formData.endpoints.tripEnd !== formData.endpoints.tripStart) {
+      const spotIndex = currentIndex
+      const { markers, detailCards } = addSpotMarkers(
+        mapRef.current,
+        [formData.endpoints.tripEnd],
+        (spot) => {
+          // すべての詳細カードを閉じる
+          endpointDetailCardsRef.current.forEach((card) => {
+            card.style.display = 'none'
+          })
+          detailCardsRef.current.forEach((card) => {
+            card.style.display = 'none'
+          })
+          searchResultDetailCardsRef.current.forEach((card) => {
+            card.style.display = 'none'
+          })
+
+          // すべてのマーカーのzIndexをリセット
+          endpointMarkersRef.current.forEach((marker) => {
+            marker.zIndex = 1
+          })
+          markersRef.current.forEach((marker) => {
+            marker.zIndex = 1
+          })
+          searchResultMarkersRef.current.forEach((marker) => {
+            marker.zIndex = 1
+          })
+
+          // 同じピンをクリックした場合は非表示（トグル）
+          if (visibleEndpointCardIndexRef.current === spotIndex) {
+            visibleEndpointCardIndexRef.current = null
+          } else {
+            // 別のピンをクリックした場合は、そのピンの詳細カードを表示
+            if (endpointDetailCardsRef.current[spotIndex]) {
+              endpointDetailCardsRef.current[spotIndex].style.display = 'block'
+              endpointMarkersRef.current[spotIndex].zIndex = 9999
+            }
+            visibleEndpointCardIndexRef.current = spotIndex
+          }
+          visibleDetailCardIndexRef.current = null
+          visibleSearchResultCardIndexRef.current = null
+
+          // マップを対応する位置に移動
+          panToMarkerWithOffset(mapRef.current!, spot.lat, spot.lng, 100)
+        },
+        '#ef4444', // 赤（Tailwind red-500）
+        true
+      )
+      allMarkers.push(...markers)
+      allDetailCards.push(...detailCards)
+      currentIndex++
+    }
+
+    endpointMarkersRef.current = allMarkers
+    endpointDetailCardsRef.current = allDetailCards
 
     // エンドポイントが表示される範囲にマップをフィット
-    if (endpointSpots.length > 0) {
+    if (allMarkers.length > 0) {
       const bounds = new google.maps.LatLngBounds()
-      endpointSpots.forEach((spot) => {
-        bounds.extend({ lat: spot.lat, lng: spot.lng })
+
+      // すべてのエンドポイントをバウンディングボックスに追加
+      if (formData.endpoints.tripStart) {
+        bounds.extend({ lat: formData.endpoints.tripStart.lat, lng: formData.endpoints.tripStart.lng })
+      }
+      formData.endpoints.accommodations.forEach((accommodation) => {
+        bounds.extend({ lat: accommodation.lat, lng: accommodation.lng })
       })
+      if (formData.endpoints.tripEnd && formData.endpoints.tripEnd !== formData.endpoints.tripStart) {
+        bounds.extend({ lat: formData.endpoints.tripEnd.lat, lng: formData.endpoints.tripEnd.lng })
+      }
 
       // 余白を持たせてフィット
       // 下部に選択済みスポットシートがあるため、topを大きくして上寄りに表示
@@ -449,47 +796,205 @@ function SpotSelectionContent() {
     console.log('[useEffect] 経路を描画します', {
       routeCount: formData.routeInfo.length,
       isPreviewMode: formData.isPreviewMode,
+      hasDayItineraries: !!formData.dayItineraries,
     })
 
     // 既存のPolylineをクリア
     polylinesRef.current.forEach((polyline) => polyline.setMap(null))
     polylinesRef.current = []
 
-    // 各ルートのポリラインをデコードして描画
-    formData.routeInfo.forEach((route, index) => {
-      if (route.polyline) {
-        try {
-          // エンコードされたポリライン文字列をデコード
-          const path = decodePolylineToLatLngs(route.polyline)
+    // エンドポイント対応プラン（dayItinerariesがある場合）: 日ごとに色分けして描画
+    if (formData.dayItineraries && formData.dayItineraries.length > 0) {
+      // 日ごとの色を定義
+      const dayColors = [
+        '#ef4444', // 1日目: 赤（Tailwind red-500）
+        '#3b82f6', // 2日目: 青（Tailwind blue-500）
+        '#10b981', // 3日目: 緑（Tailwind green-500）
+        '#f59e0b', // 4日目: オレンジ（Tailwind amber-500）
+        '#8b5cf6', // 5日目: 紫（Tailwind violet-500）
+        '#ec4899', // 6日目: ピンク（Tailwind pink-500）
+        '#06b6d4', // 7日目: シアン（Tailwind cyan-500）
+      ]
 
-          // Polylineを作成
-          const polyline = new google.maps.Polyline({
-            path,
-            strokeColor: '#ef4444', // 赤色（Tailwind red-500相当）
-            strokeWeight: 4,
-            strokeOpacity: 0.8,
-            map: mapRef.current,
-          })
+      formData.dayItineraries.forEach((dayItinerary, dayIndex) => {
+        const color = dayColors[dayIndex % dayColors.length]
+        const routeInfo = dayItinerary.routeInfo || []
 
-          polylinesRef.current.push(polyline)
+        console.log(`[useEffect] ${dayItinerary.dayNumber}日目のルートを描画`, {
+          routeCount: routeInfo.length,
+          color,
+        })
 
-          console.log(`[useEffect] ルート${index + 1}を描画しました`, {
-            pointCount: path.length,
-            distance: `${(route.distance / 1000).toFixed(1)}km`,
-          })
-        } catch (error) {
-          console.error(`[useEffect] ルート${index + 1}の描画に失敗しました:`, error)
+        routeInfo.forEach((route, routeIndex) => {
+          if (route.polyline) {
+            try {
+              // エンコードされたポリライン文字列をデコード
+              const path = decodePolylineToLatLngs(route.polyline)
+
+              // Polylineを作成
+              const polyline = new google.maps.Polyline({
+                path,
+                strokeColor: color,
+                strokeWeight: 6,
+                strokeOpacity: 0.8,
+                map: mapRef.current,
+                clickable: true,
+              })
+
+              // このPolylineのインデックスと対応する日を記録
+              const polylineIndex = polylinesRef.current.length
+
+              // クリックイベントリスナーを追加（日単位で操作）
+              polyline.addListener('click', () => {
+                const clickedDayIndex = polylineDayMapRef.current[polylineIndex]
+
+                // 既に選択されている日の場合は選択解除
+                if (selectedDayIndexRef.current === clickedDayIndex) {
+                  // 全てのPolylineを元の状態に戻す
+                  polylinesRef.current.forEach((p) => {
+                    p.setOptions({ strokeOpacity: 0.8, strokeWeight: 6 })
+                  })
+                  selectedDayIndexRef.current = null
+                } else {
+                  // クリックされた日のルート全体を強調表示、その他を薄く表示
+                  polylinesRef.current.forEach((p, idx) => {
+                    const pDayIndex = polylineDayMapRef.current[idx]
+                    if (pDayIndex === clickedDayIndex) {
+                      // 同じ日のルート：強調表示
+                      p.setOptions({ strokeOpacity: 1.0, strokeWeight: 8 })
+                    } else {
+                      // 他の日のルート：薄く表示
+                      p.setOptions({ strokeOpacity: 0.3, strokeWeight: 6 })
+                    }
+                  })
+                  selectedDayIndexRef.current = clickedDayIndex
+
+                  // プラン候補をその日の1スポット目にスクロール
+                  if (formData.dayItineraries && formData.dayItineraries.length > clickedDayIndex) {
+                    const clickedDayItinerary = formData.dayItineraries[clickedDayIndex]
+                    const dayNumber = clickedDayItinerary.dayNumber
+
+                    // spotsWithDaysからその日の最初のスポットのインデックスを見つける
+                    if (spotsWithDays) {
+                      const firstSpotIndex = spotsWithDays.findIndex(
+                        (item) => item.dayNumber === dayNumber
+                      )
+                      if (firstSpotIndex !== -1 && sheetRef.current) {
+                        // 少し遅延を入れてスクロール（アニメーションが完了してから）
+                        setTimeout(() => {
+                          sheetRef.current?.scrollToSpot(firstSpotIndex)
+                        }, 100)
+                      }
+                    }
+                  }
+                }
+              })
+
+              polylinesRef.current.push(polyline)
+              polylineDayMapRef.current.push(dayIndex) // このPolylineは何日目か記録
+
+              console.log(
+                `[useEffect] ${dayItinerary.dayNumber}日目 ルート${routeIndex + 1}を描画しました`,
+                {
+                  pointCount: path.length,
+                  distance: `${(route.distance / 1000).toFixed(1)}km`,
+                }
+              )
+            } catch (error) {
+              console.error(
+                `[useEffect] ${dayItinerary.dayNumber}日目 ルート${routeIndex + 1}の描画に失敗しました:`,
+                error
+              )
+            }
+          }
+        })
+      })
+    } else {
+      // 従来版プラン（エンドポイントなし）: すべて同じ色で描画
+      formData.routeInfo.forEach((route, index) => {
+        if (route.polyline) {
+          try {
+            // エンコードされたポリライン文字列をデコード
+            const path = decodePolylineToLatLngs(route.polyline)
+
+            // Polylineを作成
+            const polyline = new google.maps.Polyline({
+              path,
+              strokeColor: '#ef4444', // 赤色（Tailwind red-500相当）
+              strokeWeight: 6,
+              strokeOpacity: 0.8,
+              map: mapRef.current,
+              clickable: true, // クリック可能にする
+            })
+
+            const polylineIndex = polylinesRef.current.length
+            const dayIndex = 0 // traditional版は全て1日として扱う
+
+            // クリックイベント: すべてのルートを一括で強調/薄暗く表示
+            polyline.addListener('click', () => {
+              const clickedDayIndex = polylineDayMapRef.current[polylineIndex]
+
+              if (selectedDayIndexRef.current === clickedDayIndex) {
+                // 既に選択されている場合: すべてをデフォルトに戻す
+                polylinesRef.current.forEach((p) => {
+                  p.setOptions({ strokeOpacity: 0.8, strokeWeight: 6 })
+                })
+                selectedDayIndexRef.current = null
+              } else {
+                // 新しく選択: 同じ日のルート全体を強調、他を薄く
+                polylinesRef.current.forEach((p, idx) => {
+                  const pDayIndex = polylineDayMapRef.current[idx]
+                  if (pDayIndex === clickedDayIndex) {
+                    p.setOptions({ strokeOpacity: 1.0, strokeWeight: 8 })
+                  } else {
+                    p.setOptions({ strokeOpacity: 0.3, strokeWeight: 6 })
+                  }
+                })
+                selectedDayIndexRef.current = clickedDayIndex
+
+                // 従来版の場合もプラン候補をスクロール（dayPlanから最初のスポットを取得）
+                if (formData.dayPlan && formData.dayPlan.size > 0) {
+                  const sortedDays = Array.from(formData.dayPlan.entries()).sort((a, b) => a[0] - b[0])
+                  if (sortedDays.length > clickedDayIndex) {
+                    const [dayNumber, optimizedSpots] = sortedDays[clickedDayIndex]
+                    if (optimizedSpots.length > 0 && spotsWithDays) {
+                      const firstSpotIndex = spotsWithDays.findIndex(
+                        (item) => item.dayNumber === dayNumber
+                      )
+                      if (firstSpotIndex !== -1 && sheetRef.current) {
+                        setTimeout(() => {
+                          sheetRef.current?.scrollToSpot(firstSpotIndex)
+                        }, 100)
+                      }
+                    }
+                  }
+                }
+              }
+            })
+
+            polylinesRef.current.push(polyline)
+            polylineDayMapRef.current.push(dayIndex) // traditional版は全て同じ日として記録
+
+            console.log(`[useEffect] ルート${index + 1}を描画しました`, {
+              pointCount: path.length,
+              distance: `${(route.distance / 1000).toFixed(1)}km`,
+            })
+          } catch (error) {
+            console.error(`[useEffect] ルート${index + 1}の描画に失敗しました:`, error)
+          }
         }
-      }
-    })
+      })
+    }
 
     // クリーンアップ: プレビューモード解除時にPolylineを削除
     return () => {
       console.log('[useEffect] Polylineをクリーンアップします')
       polylinesRef.current.forEach((polyline) => polyline.setMap(null))
       polylinesRef.current = []
+      polylineDayMapRef.current = []
+      selectedDayIndexRef.current = null
     }
-  }, [formData.isPreviewMode, formData.routeInfo])
+  }, [formData.isPreviewMode, formData.routeInfo, formData.dayItineraries, spotsWithDays])
 
   return (
     <div className="relative h-full w-full">
@@ -526,10 +1031,30 @@ function SpotSelectionContent() {
           onSpotChange={handleSpotChange}
           onSheetStateChange={setSheetState}
           isPreviewMode={formData.isPreviewMode}
+          spotsWithDays={spotsWithDays}
         />
       )}
     </div>
   )
+}
+
+/**
+ * 日ごとのTimeSlotsをマージして1つのMapにする
+ */
+function mergeDayTimeSlots(
+  dayItineraries: Array<{ timeSlots?: Map<string, import('@/lib/itinerary/time-calculator').TimeSlot> }>
+): Map<string, import('@/lib/itinerary/time-calculator').TimeSlot> | null {
+  const mergedMap = new Map<string, import('@/lib/itinerary/time-calculator').TimeSlot>()
+
+  for (const day of dayItineraries) {
+    if (day.timeSlots) {
+      day.timeSlots.forEach((value, key) => {
+        mergedMap.set(key, value)
+      })
+    }
+  }
+
+  return mergedMap.size > 0 ? mergedMap : null
 }
 
 /**
