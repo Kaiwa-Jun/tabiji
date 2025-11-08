@@ -1022,8 +1022,10 @@ function SpotSelectionContent() {
       {/* 検索モーダル */}
       <SearchModal />
 
-      {/* スライドアップシート：選択済みスポット表示（モーダルと旅程リストが閉じている時のみ表示） */}
-      {!isModalOpen && activeTab === 'map' && (
+      {/* スライドアップシート：選択済みスポット表示 */}
+      {/* 通常モード: モーダルが閉じている時は常に表示 */}
+      {/* プレビューモード: モーダルが閉じていて、かつマップタブ選択時のみ表示 */}
+      {!isModalOpen && (!formData.isPreviewMode || activeTab === 'map') && (
         <SelectedSpotsSheet
           ref={sheetRef}
           spots={selectedSpots}

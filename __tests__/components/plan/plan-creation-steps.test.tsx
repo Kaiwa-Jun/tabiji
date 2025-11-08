@@ -8,6 +8,26 @@ import { PlanFormProvider } from '@/contexts/plan-form-context'
 import { SearchModalProvider } from '@/contexts/search-modal-context'
 import { PlanCreationSteps } from '@/components/plan/plan-creation-steps'
 
+// Server Actionsをモック化
+jest.mock('@/actions/plans', () => ({
+  savePlan: jest.fn(),
+}))
+
+// next/navigationをモック化
+jest.mock('next/navigation', () => ({
+  useRouter: jest.fn(() => ({
+    push: jest.fn(),
+    refresh: jest.fn(),
+  })),
+}))
+
+// LIFF Clientをモック化
+jest.mock('@/lib/liff/client', () => ({
+  liffClient: {
+    getProfile: jest.fn(() => Promise.resolve({ userId: 'mock-line-user-id' })),
+  },
+}))
+
 // LocalStorageのモック
 const localStorageMock = (() => {
   let store: Record<string, string> = {}
@@ -192,8 +212,8 @@ describe('PlanCreationSteps', () => {
 
       // スポット選択UI要素を確認
       expect(screen.getByText('スポットを検索...')).toBeInTheDocument()
-      // 初期タブが'route-list'に変更されたため、シートは表示されない
-      expect(screen.queryByText('選択済みスポット')).not.toBeInTheDocument()
+      // 通常モード時はシートが常に表示される
+      expect(screen.getByText('選択済みスポット')).toBeInTheDocument()
     })
 
     it('ステップ3でプレビューが表示される', () => {

@@ -9,6 +9,8 @@ import {
   type ReactNode,
 } from 'react'
 import type { PlanFormData } from '@/types/models'
+import type { TimeSlot } from '@/lib/itinerary/time-calculator'
+import type { OptimizedSpot } from '@/lib/itinerary/types'
 
 /**
  * プランフォームContextの型定義
@@ -68,10 +70,27 @@ const initialFormData: PlanFormData = {
 /**
  * LocalStorageに保存する際のデータ型
  * Date型は文字列として保存される
+ * Map型は配列として保存される
  */
-interface StoredPlanFormData extends Omit<PlanFormData, 'startDate' | 'endDate'> {
+interface StoredPlanFormData
+  extends Omit<
+    PlanFormData,
+    'startDate' | 'endDate' | 'timeSlots' | 'dayPlan' | 'dayItineraries'
+  > {
   startDate: string | null
   endDate: string | null
+  timeSlots: [string, TimeSlot][] | null
+  dayPlan: [number, OptimizedSpot[]][] | null
+  dayItineraries: StoredDayItinerary[] | null
+}
+
+/**
+ * LocalStorageに保存する際のDayItinerary型
+ * timeSlotsのMap型を配列に変換
+ */
+interface StoredDayItinerary
+  extends Omit<import('@/types/models').DayItinerary, 'timeSlots'> {
+  timeSlots?: [string, TimeSlot][]
 }
 
 /**
@@ -98,11 +117,19 @@ export function PlanFormProvider({ children }: PlanFormProviderProps) {
       if (saved) {
         const parsed: StoredPlanFormData = JSON.parse(saved)
 
-        // Date型の復元（ISO文字列 → Dateオブジェクト）
+        // Date型・Map型の復元（ISO文字列 → Dateオブジェクト、配列 → Map）
         const restored: PlanFormData = {
           ...parsed,
           startDate: parsed.startDate ? new Date(parsed.startDate) : null,
           endDate: parsed.endDate ? new Date(parsed.endDate) : null,
+          timeSlots: parsed.timeSlots ? new Map(parsed.timeSlots) : null,
+          dayPlan: parsed.dayPlan ? new Map(parsed.dayPlan) : null,
+          dayItineraries: parsed.dayItineraries
+            ? parsed.dayItineraries.map((day) => ({
+                ...day,
+                timeSlots: day.timeSlots ? new Map(day.timeSlots) : undefined,
+              }))
+            : null,
         }
 
         setFormData(restored)
@@ -110,6 +137,9 @@ export function PlanFormProvider({ children }: PlanFormProviderProps) {
           currentStep: restored.currentStep,
           hasStartDate: !!restored.startDate,
           hasEndDate: !!restored.endDate,
+          hasTimeSlots: !!restored.timeSlots,
+          hasDayPlan: !!restored.dayPlan,
+          hasDayItineraries: !!restored.dayItineraries,
         })
       }
     } catch (error) {
@@ -140,11 +170,19 @@ export function PlanFormProvider({ children }: PlanFormProviderProps) {
     }
 
     try {
-      // Date型の変換（Dateオブジェクト → ISO文字列）
+      // Date型・Map型の変換（Dateオブジェクト → ISO文字列、Map → 配列）
       const toStore: StoredPlanFormData = {
         ...formData,
         startDate: formData.startDate ? formData.startDate.toISOString() : null,
         endDate: formData.endDate ? formData.endDate.toISOString() : null,
+        timeSlots: formData.timeSlots ? Array.from(formData.timeSlots.entries()) : null,
+        dayPlan: formData.dayPlan ? Array.from(formData.dayPlan.entries()) : null,
+        dayItineraries: formData.dayItineraries
+          ? formData.dayItineraries.map((day) => ({
+              ...day,
+              timeSlots: day.timeSlots ? Array.from(day.timeSlots.entries()) : undefined,
+            }))
+          : null,
       }
 
       localStorage.setItem(STORAGE_KEY, JSON.stringify(toStore))

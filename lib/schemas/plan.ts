@@ -170,6 +170,114 @@ export const planSchema = z.object({
 })
 
 // ========================================
+// プラン保存用のスキーマ
+// ========================================
+
+/**
+ * 地点情報（スポット、駅、ホテルなど）のスキーマ
+ */
+const placeResultSchema = z.object({
+  /** Google Place ID */
+  place_id: z.string().nullish(),
+  /** 名前 */
+  name: z.string(),
+  /** 住所 */
+  address: z.string().nullish(),
+  /** 緯度 */
+  lat: z.number(),
+  /** 経度 */
+  lng: z.number(),
+  /** 写真URL */
+  photo_url: z.string().nullish(),
+  /** カテゴリ */
+  category: z.string().nullish(),
+  /** 評価 */
+  rating: z.number().nullish(),
+  /** メタデータ */
+  metadata: z.record(z.string(), z.unknown()).nullish(),
+})
+
+/**
+ * プラン保存用のスポット情報スキーマ
+ */
+const savePlanSpotSchema = z.object({
+  /** Google Place ID（カスタムスポットの場合はnull） */
+  place_id: z.string().nullish(),
+  /** スポット名 */
+  name: z.string().min(1, 'スポット名は必須です'),
+  /** 住所 */
+  address: z.string().nullish(),
+  /** 緯度 */
+  lat: z.number().min(-90).max(90),
+  /** 経度 */
+  lng: z.number().min(-180).max(180),
+  /** 写真URL */
+  photo_url: z.string().nullish(),
+  /** カテゴリ */
+  category: z.string().nullish(),
+  /** 評価 */
+  rating: z.number().min(0).max(5).nullish(),
+  /** メタデータ */
+  metadata: z.record(z.string(), z.unknown()).nullish(),
+  /** 到着時刻（HH:MM:SS形式） */
+  arrivalTime: z.string().regex(/^\d{2}:\d{2}:\d{2}$/, '時刻はHH:MM:SS形式で入力してください').nullish(),
+  /** 出発時刻（HH:MM:SS形式） */
+  departureTime: z.string().regex(/^\d{2}:\d{2}:\d{2}$/, '時刻はHH:MM:SS形式で入力してください').nullish(),
+  /** 滞在時間（分） */
+  durationMinutes: z.number().min(0).nullish(),
+  /** カスタムスポットフラグ */
+  isCustom: z.boolean().default(false),
+})
+
+/**
+ * 日程情報のスキーマ
+ */
+const dayItinerarySchema = z.object({
+  /** 日数（1日目、2日目...） */
+  dayNumber: z.number().int().min(1, '日数は1以上である必要があります'),
+  /** 日付（YYYY-MM-DD形式） */
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, '日付はYYYY-MM-DD形式で入力してください'),
+  /** スタート地点 */
+  startPoint: placeResultSchema,
+  /** ゴール地点 */
+  endPoint: placeResultSchema,
+  /** この日に訪問するスポット */
+  spots: z.array(savePlanSpotSchema),
+})
+
+/**
+ * プラン保存のバリデーションスキーマ
+ * Server Actionで使用
+ */
+export const savePlanSchema = z.object({
+  /** プランタイトル */
+  title: z
+    .string()
+    .min(1, 'タイトルを入力してください')
+    .max(100, 'タイトルは100文字以内で入力してください'),
+
+  /** 開始日（YYYY-MM-DD形式） */
+  startDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, '開始日はYYYY-MM-DD形式で入力してください'),
+
+  /** 終了日（YYYY-MM-DD形式） */
+  endDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, '終了日はYYYY-MM-DD形式で入力してください'),
+
+  /** エリア（地方 + 都道府県） */
+  area: z.string().min(1, 'エリアを入力してください'),
+
+  /** 表示モード */
+  displayMode: z.enum(['order_only', 'with_time'], {
+    message: '表示モードは order_only または with_time を指定してください',
+  }).default('with_time'),
+
+  /** 公開フラグ */
+  isPublic: z.boolean().default(false),
+
+  /** 日程情報 */
+  dayItineraries: z.array(dayItinerarySchema).min(1, '少なくとも1日分の日程が必要です'),
+})
+
+// ========================================
 // 型エクスポート（Zodスキーマから生成）
 // ========================================
 
@@ -190,3 +298,6 @@ export type SpotFormData = z.infer<typeof spotSchema>
 
 /** カスタムスポット型 */
 export type CustomSpotFormData = z.infer<typeof customSpotSchema>
+
+/** プラン保存データの型 */
+export type SavePlanData = z.infer<typeof savePlanSchema>

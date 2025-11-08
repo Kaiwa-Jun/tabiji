@@ -1,5 +1,7 @@
 'use client'
 
+import { useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { usePlanForm } from '@/contexts/plan-form-context'
 import { StepIndicator } from './step-indicator'
 import { Button } from '@/components/ui/button'
@@ -7,6 +9,7 @@ import { ChevronRight, ChevronLeft } from 'lucide-react'
 import { DateInputStep } from './steps/date-input'
 import { SpotSelectionStep } from './steps/spot-selection'
 import { CompletionStep } from './steps/completion'
+import { savePlan } from '@/actions/plans'
 
 /**
  * プラン作成ステップコンポーネント
@@ -21,6 +24,9 @@ import { CompletionStep } from './steps/completion'
  */
 export function PlanCreationSteps() {
   const { formData, nextStep, prevStep, updateFormData } = usePlanForm()
+  const router = useRouter()
+  const [isSaving, setIsSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
 
   /**
    * 次のステップに進めるかを検証
@@ -81,16 +87,42 @@ export function PlanCreationSteps() {
   /**
    * 次へボタンのクリック処理
    */
-  const handleNextClick = () => {
+  const handleNextClick = async () => {
     if (formData.currentStep === 2 && !formData.isPreviewMode) {
       // ステップ2で通常モードの場合: プラン作成処理を開始
       // ステップ3（プレビュー）に進み、プレビューモードを有効化
       updateFormData({ isPreviewMode: true, currentStep: 3 })
     } else if (formData.currentStep === 3 && formData.isPreviewMode) {
       // ステップ3でプレビューモードの場合: 保存処理
-      // Phase 7で本格的な保存処理を実装予定
-      // 現時点では次のステップ（完了画面）に進む
-      nextStep()
+      setIsSaving(true)
+      setSaveError(null)
+
+      try {
+        // プランのタイトルを生成（エリア + 旅行）
+        const title =
+          formData.region && formData.prefecture
+            ? `${formData.prefecture}旅行`
+            : '新しい旅行プラン'
+
+        // Server Actionでプランを保存（認証はServer Action内で自動実行）
+        const result = await savePlan(formData, title)
+
+        if (result.success) {
+          console.log('[PlanCreationSteps] Plan saved successfully:', result.planId)
+
+          // 成功時: プラン一覧画面にリダイレクト
+          router.push('/liff/plans')
+        } else {
+          // エラー時: エラーメッセージを表示
+          console.error('[PlanCreationSteps] Save error:', result.error)
+          setSaveError(result.error || 'プランの保存に失敗しました')
+          setIsSaving(false)
+        }
+      } catch (error) {
+        console.error('[PlanCreationSteps] Unexpected error:', error)
+        setSaveError('予期しないエラーが発生しました')
+        setIsSaving(false)
+      }
     } else {
       // その他の場合: 通常の次へ処理
       nextStep()
@@ -138,6 +170,13 @@ export function PlanCreationSteps() {
       {/* ナビゲーションボタン（フッター） */}
       {formData.currentStep < 4 && (
         <div className="border-t bg-background p-4">
+          {/* エラーメッセージ */}
+          {saveError && (
+            <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg text-red-700 text-sm">
+              {saveError}
+            </div>
+          )}
+
           <div className="flex items-center gap-3">
             {/* 戻るボタン（ステップ1では非表示） */}
             {formData.currentStep > 1 && (
@@ -146,6 +185,7 @@ export function PlanCreationSteps() {
                 variant="outline"
                 className="h-12 flex-1"
                 size="lg"
+                disabled={isSaving}
               >
                 <ChevronLeft className="mr-2 h-5 w-5" />
                 戻る
@@ -155,12 +195,12 @@ export function PlanCreationSteps() {
             {/* 次へボタン */}
             <Button
               onClick={handleNextClick}
-              disabled={!canGoNext()}
+              disabled={!canGoNext() || isSaving}
               className="h-12 flex-1 bg-green-500 text-white hover:bg-green-600 disabled:bg-gray-300"
               size="lg"
             >
-              {getNextButtonLabel()}
-              {formData.currentStep < 3 && <ChevronRight className="ml-2 h-5 w-5" />}
+              {isSaving ? '保存中...' : getNextButtonLabel()}
+              {formData.currentStep < 3 && !isSaving && <ChevronRight className="ml-2 h-5 w-5" />}
             </Button>
           </div>
         </div>

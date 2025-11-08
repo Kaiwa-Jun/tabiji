@@ -46,3 +46,7 @@ next-env.d.ts
 
 # supabase
 supabase/.env
+.env.production.local
+
+# development tools
+scripts/db-tools.sh
