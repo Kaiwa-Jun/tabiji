@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server'
 import { revalidatePath } from 'next/cache'
 import { savePlanSchema, type SavePlanData } from '@/lib/schemas/plan'
 import { errorToString } from '@/lib/utils/error-handling'
+import { extractAreaFromItineraries } from '@/lib/utils/area'
 import type { PlanFormData } from '@/types/models'
 
 /**
@@ -27,10 +28,6 @@ function convertFormDataToSaveData(formData: PlanFormData, title: string): SaveP
     throw new Error('開始日と終了日は必須です')
   }
 
-  if (!formData.region || !formData.prefecture) {
-    throw new Error('地方と都道府県は必須です')
-  }
-
   if (!formData.dayItineraries || formData.dayItineraries.length === 0) {
     throw new Error('日程情報が必要です')
   }
@@ -39,8 +36,8 @@ function convertFormDataToSaveData(formData: PlanFormData, title: string): SaveP
   const startDate = formData.startDate.toISOString().split('T')[0]
   const endDate = formData.endDate.toISOString().split('T')[0]
 
-  // エリア文字列を作成
-  const area = `${formData.region} ${formData.prefecture}`
+  // エリア（都道府県）をスポットの住所から抽出
+  const area = extractAreaFromItineraries(formData.dayItineraries)
 
   // 日程情報を変換
   const dayItineraries = formData.dayItineraries.map((day) => {
@@ -129,35 +126,26 @@ function convertFormDataToSaveData(formData: PlanFormData, title: string): SaveP
  */
 export async function savePlan(
   formData: PlanFormData,
-  title: string = '新しい旅行プラン',
-  lineUserId?: string
+  title: string = '新しい旅行プラン'
 ): Promise<SavePlanResult> {
   try {
-    // 1. 認証チェック（LINE User IDが必須）
-    if (!lineUserId) {
-      console.error('[savePlan] LINE User ID is required')
+    const supabase = await createClient()
+
+    // 1. 認証チェック（auth.uid()を使用）
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      console.error('[savePlan] Authentication failed:', authError)
       return {
         success: false,
         error: 'ログインが必要です',
       }
     }
 
-    const supabase = await createClient()
-
-    // LINE User IDからユーザー情報を取得
-    const { data: user, error: userError } = await supabase
-      .from('users')
-      .select('id')
-      .eq('line_user_id', lineUserId)
-      .single()
-
-    if (userError || !user) {
-      console.error('[savePlan] User not found:', userError)
-      return {
-        success: false,
-        error: 'ユーザー情報が見つかりません',
-      }
-    }
+    console.log('[savePlan] Authenticated user:', user.id)
 
     // 2. FormDataをSaveDataに変換
     let saveData: SavePlanData
@@ -182,10 +170,11 @@ export async function savePlan(
     }
 
     // 4. PostgreSQL関数をRPC経由で呼び出し
+    // Note: p_user_idにauth.uid()（user.id）を使用
     // Note: save_travel_plan関数は型定義されていないため、型アサーションを使用
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: planId, error: rpcError } = await (supabase.rpc as any)('save_travel_plan', {
-      p_user_id: user.id,
+      p_user_id: user.id, // auth.uid() を使用（RLSポリシーと一致）
       p_title: saveData.title,
       p_start_date: saveData.startDate,
       p_end_date: saveData.endDate,

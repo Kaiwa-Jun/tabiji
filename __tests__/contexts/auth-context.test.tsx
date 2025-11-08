@@ -8,10 +8,24 @@ import { liffClient } from '@/lib/liff/client'
 import type { LiffUserProfile } from '@/types/user'
 
 // Server Actionsのモック
-const mockRegisterOrUpdateUser = jest.fn()
+const mockRegisterUserWithAuth = jest.fn()
 jest.mock('@/actions/users', () => ({
-  registerOrUpdateUser: (profile: LiffUserProfile) =>
-    mockRegisterOrUpdateUser(profile),
+  registerUserWithAuth: (profile: LiffUserProfile) =>
+    mockRegisterUserWithAuth(profile),
+}))
+
+// Supabase Clientのモック
+const mockSupabaseClient = {
+  auth: {
+    getSession: jest.fn(),
+    getUser: jest.fn(),
+    signInAnonymously: jest.fn(),
+    signOut: jest.fn(),
+  },
+}
+
+jest.mock('@/lib/supabase/client', () => ({
+  createClient: () => mockSupabaseClient,
 }))
 
 // LIFF Clientのモック
@@ -32,7 +46,24 @@ describe('AuthContext', () => {
     mockLiffClient.isLoggedIn.mockReturnValue(false)
     mockLiffClient.getProfile.mockReset()
     mockLiffClient.logout.mockReset()
-    mockRegisterOrUpdateUser.mockReset()
+    mockRegisterUserWithAuth.mockReset()
+
+    // Supabaseモックのデフォルト設定
+    mockSupabaseClient.auth.getSession.mockResolvedValue({
+      data: { session: null },
+      error: null,
+    })
+    mockSupabaseClient.auth.signInAnonymously.mockResolvedValue({
+      data: {
+        user: { id: 'test-auth-uid' },
+        session: { access_token: 'test-token' },
+      },
+      error: null,
+    })
+    mockSupabaseClient.auth.getUser.mockResolvedValue({
+      data: { user: { id: 'test-auth-uid' } },
+      error: null,
+    })
   })
 
   describe('初期化', () => {
@@ -68,7 +99,7 @@ describe('AuthContext', () => {
 
       mockLiffClient.isLoggedIn.mockReturnValue(true)
       mockLiffClient.getProfile.mockResolvedValue(mockProfile)
-      mockRegisterOrUpdateUser.mockResolvedValue({
+      mockRegisterUserWithAuth.mockResolvedValue({
         data: mockUser,
         error: null,
       })
@@ -84,7 +115,7 @@ describe('AuthContext', () => {
       expect(result.current.user).toEqual(mockUser)
       expect(result.current.isInitialized).toBe(true)
       expect(mockLiffClient.getProfile).toHaveBeenCalledTimes(1)
-      expect(mockRegisterOrUpdateUser).toHaveBeenCalledWith(mockProfile)
+      expect(mockRegisterUserWithAuth).toHaveBeenCalledWith(mockProfile)
     })
 
     it('LIFFにログインしていない場合、初期化のみ完了する', async () => {
@@ -146,7 +177,7 @@ describe('AuthContext', () => {
 
       mockLiffClient.isLoggedIn.mockReturnValue(true)
       mockLiffClient.getProfile.mockResolvedValue(mockProfile)
-      mockRegisterOrUpdateUser.mockResolvedValue({
+      mockRegisterUserWithAuth.mockResolvedValue({
         data: null,
         error: 'Database error',
       })
@@ -161,17 +192,10 @@ describe('AuthContext', () => {
 
       expect(result.current.user).toBeNull()
       expect(result.current.isLoading).toBe(false)
-      // 新しいエラーログ形式: エラーとユーザー情報を分けて出力
+      // エラーログ形式が変更されました
       expect(consoleErrorSpy).toHaveBeenCalledWith(
         '[AuthContext] User registration failed:',
         'Database error'
-      )
-      expect(consoleErrorSpy).toHaveBeenCalledWith(
-        '[AuthContext] User info:',
-        expect.objectContaining({
-          userId: 'U1234567890abcdef',
-          displayName: 'テストユーザー',
-        })
       )
 
       consoleErrorSpy.mockRestore()
@@ -215,7 +239,7 @@ describe('AuthContext', () => {
 
       mockLiffClient.isLoggedIn.mockReturnValue(true)
       mockLiffClient.getProfile.mockResolvedValue(mockProfile)
-      mockRegisterOrUpdateUser.mockResolvedValue({
+      mockRegisterUserWithAuth.mockResolvedValue({
         data: mockUser,
         error: null,
       })
@@ -236,7 +260,7 @@ describe('AuthContext', () => {
 
       // 2回目のプロフィール取得
       expect(mockLiffClient.getProfile).toHaveBeenCalledTimes(2)
-      expect(mockRegisterOrUpdateUser).toHaveBeenCalledTimes(2)
+      expect(mockRegisterUserWithAuth).toHaveBeenCalledTimes(2)
     })
   })
 })

@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { usePlanForm } from '@/contexts/plan-form-context'
-import { liffClient } from '@/lib/liff/client'
 import { StepIndicator } from './step-indicator'
 import { Button } from '@/components/ui/button'
 import { ChevronRight, ChevronLeft } from 'lucide-react'
@@ -99,17 +98,14 @@ export function PlanCreationSteps() {
       setSaveError(null)
 
       try {
-        // LINE User IDを取得
-        const profile = await liffClient.getProfile()
-        const lineUserId = profile.userId
-
         // プランのタイトルを生成（エリア + 旅行）
-        const title = formData.region && formData.prefecture
-          ? `${formData.prefecture}旅行`
-          : '新しい旅行プラン'
+        const title =
+          formData.region && formData.prefecture
+            ? `${formData.prefecture}旅行`
+            : '新しい旅行プラン'
 
-        // Server Actionでプランを保存
-        const result = await savePlan(formData, title, lineUserId)
+        // Server Actionでプランを保存（認証はServer Action内で自動実行）
+        const result = await savePlan(formData, title)
 
         if (result.success) {
           console.log('[PlanCreationSteps] Plan saved successfully:', result.planId)

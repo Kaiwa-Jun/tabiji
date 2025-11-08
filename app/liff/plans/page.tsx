@@ -50,11 +50,10 @@ export default async function PlansPage() {
     )
   }
 
-  // プラン一覧を取得（作成したプラン + 参加しているプラン）
+  // プラン一覧を取得（RLSポリシーで自動的に作成したプランのみ取得）
   const { data: plans, error } = await supabase
     .from('travel_plans')
     .select('*')
-    .or(`created_by.eq.${user.id},id.in.(select plan_id from plan_members where user_id = ${user.id})`)
     .order('created_at', { ascending: false })
 
   if (error) {
